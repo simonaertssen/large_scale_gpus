@@ -6,6 +6,11 @@
 # Icon must end with two \r
 Icon
 
+# We do not want any compiled code
+*.exe
+*.out
+*.o
+*.so
 
 # Thumbnails
 ._*
