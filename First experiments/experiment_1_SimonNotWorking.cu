@@ -6,7 +6,7 @@
 // This script contains some numerical tests to get to know cublas 
 // and how to split up matrices in blocks for gpu computation.
 // Run with:
-// nvcc experiment_1.cu && ./a.out
+// nvcc -lcublas experiment_1.cu && ./a.out
 
 void test(double * matrix, int dim){
     int i, j;
@@ -50,7 +50,7 @@ int main(){
     cublasHandle_t handle;
     cublasCreate(&handle);
 
-    cudaStream_t *stream = (cudaStream_t *) malloc(sizeof(cudaStream_t));
+    cudaStream_t* stream = (cudaStream_t *) malloc(sizeof(cudaStream_t));
     cudaStreamCreate(&stream[0]);
 
     // Send matrix to GPU:
@@ -76,9 +76,9 @@ int main(){
     cublasGetMatrix(n, n, sizeof(double*), C, n, A, n);
 
     test(A,n);
-
     free(A);
     free(C);
     cudaFree(C);
+    cudaStreamDestroy(stream);
     return 0;
 }

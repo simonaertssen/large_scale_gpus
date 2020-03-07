@@ -3,6 +3,8 @@
 #include "math.h"
 #include "cublas_v2.h"
  
+ // nvcc -g -O3 -arch=sm_70 -lcublas batchCublasTest.cu
+
 int main(int argc, char* argv[])
 {
     int i,j,k,index;
