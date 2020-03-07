@@ -50,8 +50,8 @@ int main(){
     cublasHandle_t handle;
     cublasCreate(&handle);
 
-    cudaStream_t *stream = (cudaStream_t *) malloc(batch_count*sizeof(cudaStream_t));
-    cudaStreamCreate(&stream);
+    cudaStream_t *stream = (cudaStream_t *) malloc(sizeof(cudaStream_t));
+    cudaStreamCreate(&stream[0]);
 
     // Send matrix to GPU:
     cublasSetMatrix(n, n, sizeof(double*), A, n, C, n);
@@ -61,18 +61,21 @@ int main(){
     double beta  = 0.0;
 
     // Set CUDA stream
-    cublasSetStream(handle, stream);
+    cublasSetStream(handle, stream[0]);
  
     // DGEMM: A = alpha*A*A + beta*A
     cublasDgemm(handle,
                     CUBLAS_OP_N, CUBLAS_OP_N,
                     n, n, n,
                     &alpha,
-                    A, n,
-                    A, n,
+                    C, n,
+                    C, n,
                     &beta,
-                    A, n);
+                    C, n);
 
+    cublasGetMatrix(n, n, sizeof(double*), C, n, A, n);
+
+    test(A,n);
 
     free(A);
     free(C);
