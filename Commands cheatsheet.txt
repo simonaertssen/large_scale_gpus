@@ -1,0 +1,52 @@
+##### 1. Cluster commands ##### 
+sxm2sh -X
+= enter the designated cluster
+
+lscpu
+= view cpu data
+
+free
+= view memory use
+
+nvidia-smi 
+= view nvidia setup
+
+nvidia-smi topo -m 
+= view topology
+
+nvprof ./a.out
+= run a profiler on executable performance
+
+ 
+
+##### 2. Git commands ##### 
+git clone ..url.. clones to wd
+also clone from https url
+URL WORKS FINE:
+git clone https://github.com/simonaertssen/CodingWork.git
+
+
+but ssh/id automates the id (look at private/public keys on the computer?) 
+-> look at GitHub/settings/ssh
+
+Download single files?
+Maybe look at deleting files?
+use nano filename.extension for quick edits
+
+then:
+git clone ..
+
+(touch was really cool)
+
+git add -A (to add ALL the new file I guess?) 
+or
+git add addme.c
+
+git commit -m “This is the description“
+
+git push
+
+git pull (for a cloned repository)
+
+
+
