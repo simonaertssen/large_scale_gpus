@@ -14,11 +14,12 @@
   Version: 1.0 13/03/2020
 */
 
-
 #ifndef CUDACLUSTER_DEFINE
 #define CUDACLUSTER_DEFINE
 
 #include <stdio.h>
+#include "cublas_v2.h"
+
 
 /* Macro definitions */
 #define CUDACLUSTER_FAILURE -1
@@ -29,8 +30,13 @@
 #define CUDACLUSTER_DIMENSION_MISMATCH 4
 #define MEM_ERR fprintf(stderr,"%s: failed to allocate memory\n",__func__)
 #define FILE_ERR(x) fprintf(stderr,"%s: failed to open file %s\n",__func__,x)
-#define INPUT_ERR fprintf(stderr,"%s: received NULL pointer as input\n",__func__)
+#define INPUT_NULL_ERR fprintf(stderr,"%s: received NULL pointer as input\n",__func__)
+#define INPUT_ILL_ERR(x) fprintf(stderr,"%s: received illegal input %u\n",__func__, x)
 
+
+/**********************/
+/* Structures         */
+/**********************/
 
 /* Structure representing a CUDACLUSTER vector */
 typedef struct vector {
@@ -47,15 +53,18 @@ typedef struct matrix {
 
 
 /**********************/
-/* Prototypes         */
+/* Functions          */
 /**********************/
 
-/* Allocation/deallocation */
-/* vector *malloc_vector(unsigned long r);
-void free_vector(vector *freethisvector); */
-matrix *malloc_matrix(unsigned long r, unsigned long c);
-matrix *malloc_zeros(unsigned long r, unsigned long c);
-matrix *malloc_ones(unsigned long r, unsigned long c);
-void free_matrix(matrix *freethismatrix);
+/* Allocation/deallocation on the host*/
+vector *ccVector(unsigned long r);
+void ccFreeVector(vector *freethisvector); 
+matrix *ccMatrix(unsigned long r, unsigned long c);
+matrix *ccZerosMatrix(unsigned long r, unsigned long c);
+matrix *ccOnesMatrix(unsigned long r, unsigned long c);
+void ccFreeMatrix(matrix *freethismatrix);
+
+/* Allocation/deallocation on the device(s)*/
+matrix *ccMatrixToGPU(matrix *hostmatrix);
 
 #endif
