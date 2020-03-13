@@ -32,11 +32,10 @@
                             "    "
 
 DTU Special course: Large Scale GPU Computing
-    Authors: Simon Aertssen (s181603) and Louis Hein (s181573)
-    Supervisors: Bernd Damman and Hans Henrik Brandenborg Soerensen
-
-	DIEKUHDA (pronounce "dcuda"):  Basic data structures, allocation/deallocation
-	routines, and input/output routines for matrices, to be used in the
+  Authors: Simon Aertssen (s181603) and Louis Hein (s181573)
+  Supervisors: Bernd Damman and Hans Henrik Brandenborg Soerensen
+  DIEKUHDA (pronounce "dcuda"):  Basic data structures, allocation/deallocation
+  routines, and input/output routines for matrices, to be used in the
 
   Version: 1.0 13/03/2020
   Appreciate the ascii art @ fsymbols.com

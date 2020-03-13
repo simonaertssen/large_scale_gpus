@@ -28,17 +28,17 @@ vector *kuhdaMallocV(unsigned long r){
   if (out == NULL) {
     MEM_ERR;
     free(out);
-		return NULL;
-	}
+    return NULL;
+  }
   out->r = r;
-	out->data = calloc(r, sizeof(*out->data));
-	if (out->data == NULL) {
+  out->data = calloc(r, sizeof(*out->data));
+  if (out->data == NULL) {
     MEM_ERR;
-		free(out->data);
+    free(out->data);
     free(out);
-		return NULL;
-	}
-	return out;
+    return NULL;
+  }
+  return out;
 }
 
 
@@ -74,14 +74,14 @@ matrix *kuhdaMallocM(unsigned long r, unsigned long c){
   }
   out->r = r;
   out->c = c;
-	out->data = calloc(r*c, sizeof(*out->data));
+  out->data = calloc(r*c, sizeof(*out->data));
   if (out->data == NULL) {
     MEM_ERR;
-		free(out->data);
+    free(out->data);
     free(out);
-		return NULL;
-	}
-	return out;
+    return NULL;
+  }
+  return out;
 }
 
 
@@ -149,16 +149,15 @@ void kuhdaMatrixToGPU(unsigned long rows, unsigned long cols, matrix *hostmatrix
   if (failure != 0) {
     MEM_ERR;
     cudaFree(d_matrix);
-		return NULL;
-	}
+    return NULL;
+  }
 
   failure = cublasSetMatrix(rows, cols, sizeof(double), hostmatrix->data, hostmatrix->r, d_matrix, hostmatrix->r)
   if (failure != 0) {
     FAIL_ERR(failure);
     cudaFree(d_matrix);
-		return NULL;
-	}
-
+    return NULL;
+  }
 }
 
 
