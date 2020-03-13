@@ -5,7 +5,7 @@
 #include "cublas_v2.h"
 #include <limits.h>
 
-// This script contains some numerical tests to get to know cublas 
+// This script contains some numerical tests to get to know cublas
 // and how to split up matrices in blocks for gpu computation.
 // Run with:
 // nvcc -lcublas -lgomp experiment_1.cu && ./a.out
@@ -44,12 +44,12 @@ int main(){
     double *C = NULL;
     //cudaMalloc(&C, n_squared * sizeof(double))
     if (A == NULL) printf("A is NULL\n");
-    
+
     if (cudaMalloc(&C, n_squared * sizeof(double)) != 0){
         fprintf(stderr, "CudaMalloc failed: matrix is of size %ldGB which is larger than 16GB (V100 memory).\n", n_squared * sizeof(double) / 10e9);
         exit(-1);
         }
-    
+
     // Fill as ones
     for (i = 0; i < n; i++){
         for (j = 0; j  < n; j++){
@@ -78,10 +78,10 @@ int main(){
     // Set CUDA stream
     cublasSetStream(handle, stream[0]);
     if ( cublasSetStream(handle, stream[0]) != 0 ) printf("cublasSetStream failed\n");
- 
+
     // DGEMM: A = alpha*A*A + beta*A
     t1 = omp_get_wtime();
-    
+
     int cublasDgemm_check = cublasDgemm(handle,
                     CUBLAS_OP_N, CUBLAS_OP_N,
                     n, n, n,
