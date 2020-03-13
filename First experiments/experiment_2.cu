@@ -5,13 +5,6 @@
 #include "cublas_v2.h"
 #include <limits.h>
 
-// PROBLEMS WITH SIZE OF MATRIX A, DUE TO INDICES I AND J
-// Results from the latest session:
-// n = 2*16384
-// Time = 9.0686 seconds
-// 775.978 GFLOPS
-
-
 // This script contains some numerical tests to get to know cublas 
 // and how to split up matrices in blocks for gpu computation.
 // Run with:
@@ -33,9 +26,7 @@ void test(double * matrix, int dim){
 
 
 int main(){
-    // After running into trouble with large numbers, we need to check the max size
-    // of the matrix dimensions.
-    // printf("Max value of type int  = %d \n", INT_MAX);
+    // printf("Max value of type int = %d \n", INT_MAX);
     // printf("Max value of type uint = %zu \n", UINT_MAX);
 
     // Counters and timers:
@@ -43,25 +34,34 @@ int main(){
     double t1, t2, gflops;
 
     // Size of testmatrix = pow(2,14) = 16384
-    int n = 16384*4;
-    printf("n = %d\n", n);
+    long int n = 16384/100;
+    long int n_squared = n*n;
+    printf("n*n = %ld\n", n*n);
 
     // Allocate a matrix A and C of size n*n
-    double *A = (double*) malloc(n * n * sizeof(double));
+    double *A = (double*) malloc(n_squared * sizeof(double));
+    printf("Last A = %lf \n", A[n_squared-1]);
+    //printf("%size_t", sizeof(A));
+
     double *C = NULL;
-    //cudaMalloc(&C, n * n * sizeof(double))
+    //cudaMalloc(&C, n_squared * sizeof(double))
     if (A == NULL) printf("A is NULL\n");
-    if (cudaMalloc(&C, n * n * sizeof(double)) != 0) printf("CudaMalloc failed\n");
+    
+    if (cudaMalloc(&C, n_squared * sizeof(double)) != 0){
+        //printf("CudaMalloc failed\n");
+        printf("%ld\n", n_squared * sizeof(double) / 1000 / 1000 / 1000);
+        fprintf(stderr, "CudaMalloc failed: matrix is of size %ldGB which is larger than 16GB (V100 memory).\n", n * n * sizeof(double) / 1000 / 1000 / 1000);
+        exit(-1);
+        }
     
     // Fill as ones
-    for (i = 0; i  < n; ++i){
-        for (j = 0; j  < n; ++j){
+    for (i = 0; i < n; i++){
+        for (j = 0; j  < n; j++){
             //A[i*n + j] = 1.0;
-            printf("i = %d, j = %d\n", i, j);
+            //printf("i = %d, j = %d\n", i, j);
             *(A + i*n + j) = 1.0;
         }
     }
-    printf("i = %zu, j = %zu\n", i, j);
 
     // Test if correct:
     //test(A, n);
@@ -74,6 +74,8 @@ int main(){
 
 
     cudaStream_t *stream = (cudaStream_t *) malloc(sizeof(cudaStream_t));
+    //cudaStream_t *stream;
+    //cudaStreamCreate(stream);
     //cudaStreamCreate(&stream[0]);
     if ( cudaStreamCreate(&stream[0]) != 0 ) printf("cudaStreamCreate faileds\n");
 
@@ -87,7 +89,7 @@ int main(){
 
     // Set CUDA stream
     //cublasSetStream(handle, stream[0]);
-    if ( cublasSetStream(handle, stream[0]) != 0 ) printf("cublasSetStream faileds\n");
+    //if ( cublasSetStream(handle, stream[0]) != 0 ) printf("cublasSetStream faileds\n");
 
  
     // DGEMM: A = alpha*A*A + beta*A
@@ -101,12 +103,15 @@ int main(){
                     &beta,
                     C, n);
 
-    cudaDeviceSynchronize();
+    //cudaDeviceSynchronize();
     t2 = omp_get_wtime();
 
     // Time the computations as in "How to compute GFLOPS for GEMM BLAS?" - nvidia forum
     printf("Time: %lf \n", t2-t1);
-    gflops = ((long int)n*(long int)n*(2*(long int)n + 2)) / (10e9 *(t2 - t1));
+    printf("Max value of type long int = %ld \n", LONG_MAX);
+    printf("Test: %ld\n", n_squared * (2*n + 2) );
+    printf("Test: %lf\n", (10e9 *(t2 - t1)));
+    gflops = (long long)(n_squared * (2*n + 2)) / (10e9 *(t2 - t1));
     //gflops = (2 * (long int)n * (long int)n * (long int)n ) / (10e9 *(t2 - t1));
 
     //printf("Compute: (%d*%d*(2*%d + 2)) / (10e9 *(%lf - %lf)) \n", n, n, n, t2, t1);
@@ -116,7 +121,6 @@ int main(){
     //cublasGetMatrix(n, n, sizeof(double*), C, n, A, n);
     if ( cublasGetMatrix(n, n, sizeof(double*), C, n, A, n) != 0 ) printf("cublasGetMatrix faileds\n");
 
-    
     // test(A,n);
 
     free(A);

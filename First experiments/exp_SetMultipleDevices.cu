@@ -11,9 +11,8 @@
 // nvcc -lcublas -lgomp experiment_1.cu && ./a.out
 
 void test(double * matrix, int dim){
-    // FOR LARGE N THE TESTFUNCTION DOES NOT WORK
     int i, j;
-    long long sum = 0L;
+    long long sum = 0;
     int count = 0;
     for (i = 0; i < dim; ++i){
         for (j = 0; j < dim; ++j){
@@ -31,13 +30,12 @@ void test(double * matrix, int dim){
 
 int main(){
     // Counters and timers:
-    int i, j;
+    int i, j, left, right;
     double t1, t2, gflops;
 
     // Size of testmatrix = pow(2,14) = 16384
-    long int n = 16384;
-    long int n_squared = n*n;
-    printf("n*n = %ld\n", n*n);
+    int n = 16384, sub_n = 25;
+    int n_squared = n*n, sub_n_squared = sub_n*sub_n;
 
     // Allocate a matrix A and C of size n*n
     double *A = (double*) malloc(n_squared * sizeof(double));
@@ -58,7 +56,6 @@ int main(){
     }
 
     // Test if correct:
-    // FOR LARGE N THE TESTFUNCTION DOES NOT WORK
     //test(A, n);
 
     // Now the CUDA part:
@@ -67,9 +64,6 @@ int main(){
     if ( cublasCreate(&handle) != 0 ) printf("cublasCreate faileds\n");
     cudaStream_t *stream = (cudaStream_t *) malloc(sizeof(cudaStream_t));
     if ( cudaStreamCreate(&stream[0]) != 0 ) printf("cudaStreamCreate faileds\n");
-
-    // Send matrix to GPU:
-    if ( cublasSetMatrix(n, n, sizeof(double), A, n, C, n) != 0 ) printf("cublasSetMatrix faileds\n");
 
     // Set matrix coefficients
     double alpha = 1.0;
@@ -82,29 +76,32 @@ int main(){
     // DGEMM: A = alpha*A*A + beta*A
     t1 = omp_get_wtime();
     
-    int cublasDgemm_check = cublasDgemm(handle,
-                    CUBLAS_OP_N, CUBLAS_OP_N,
-                    n, n, n,
-                    &alpha,
-                    C, n,
-                    C, n,
-                    &beta,
-                    C, n);
-    printf("cublasDgemm_check = %d\n", cublasDgemm_check);
+    #pragma parallel for
+    for (int i = 0; i < 4; ++i){
+        left = sub_n*i, right = sub_n*(i+1);
 
-    cudaDeviceSynchronize();
+        cudaSetDevice(i);
+
+        // Send matrix to GPU:
+        if ( cublasSetMatrix(n, n, sizeof(double), A, n, C, n) != 0 ) printf("cublasSetMatrix faileds\n");
+    
+        cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, n, n, n, &alpha, C, n, C, n, &beta, C, n);
+
+        // Return the matrix
+        if ( cublasGetMatrix(n, n, sizeof(double*), C, n, A, n) != 0 ) printf("cublasGetMatrix faileds\n");
+
+    }
+    
+    //cudaDeviceSynchronize();
     t2 = omp_get_wtime();
 
     // Time the computations as in "How to compute GFLOPS for GEMM BLAS?" - nvidia forum
     // See: https://devtalk.nvidia.com/default/topic/482834/how-to-compute-gflops-for-gemm-blas/
     printf("Elapsed itme is %lf seconds\n", t2 - t1);
-    gflops = (long long)(n_squared * (2*n + 2)) / (1.0e9 *(t2 - t1));
+    gflops = 4*(long long)(n_squared * (2*n + 2)) / (10e9 *(t2 - t1));
     printf("Timed %lf GFLPS .. hah \n", gflops);
 
-    // Return the matrix
-    if ( cublasGetMatrix(n, n, sizeof(double*), C, n, A, n) != 0 ) printf("cublasGetMatrix faileds\n");
-
-    //test(A,n);
+    test(A,n);
 
     free(A);
     cudaFree(C);
