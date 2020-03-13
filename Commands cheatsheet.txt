@@ -1,5 +1,10 @@
 ##### 1. Cluster commands ##### 
+# DGX-1:
 sxm2sh -X
+
+# POWER9:
+p9sh
+
 = enter the designated cluster
 
 lscpu
