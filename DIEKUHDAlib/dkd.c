@@ -1,16 +1,21 @@
-#include "DIEKUHDA.h"
-██████╗░ ██╗ ███████╗ ██╗░ ██╗ ██╗░  ██╗ ██╗░ ██╗ ██████╗░  █████╗░      █████╗░
-██╔══██╗ ██║ ██╔════╝ ██║░██╔╝ ██║░  ██║ ██║░ ██║ ██╔══██╗ ██╔══██╗     ██╔══██╗
-██║░ ██║ ██║ █████╗░  █████═╝░ ██║░  ██║ ███████║ ██║░ ██║ ███████║     ██║░░╚═╝
-██║░ ██║ ██║ ██╔══╝░  ██╔═██╗░ ██║░  ██║ ██╔══██║ ██║░ ██║ ██╔══██║     ██║░░██╗
-██████╔╝ ██║ ███████╗ ██║░╚██╗ ╚██████╔╝ ██║░ ██║ ██████╔╝ ██║░ ██║ ██╗ ╚█████╔╝
-╚═════╝░ ╚═╝ ╚══════╝ ╚═╝░ ╚═╝░ ╚═════╝░ ╚═╝░ ╚═╝ ╚═════╝░ ╚═╝░ ╚═╝ ╚═╝░ ╚════╝░
+#include "dkd.h"
+/*
+88888888ba,    88  88888888888  88      a8P  88        88  88        88  88888888ba,         db                      ,ad8888ba,
+88      `"8b   88  88           88    ,88'   88        88  88        88  88      `"8b       d88b                    d8"'    `"8b
+88        `8b  88  88           88  ,88"     88        88  88        88  88        `8b     d8'`8b                  d8'
+88         88  88  88aaaaa      88,d88'      88        88  88aaaaaaaa88  88         88    d8'  `8b                 88
+88         88  88  88"""""      8888"88,     88        88  88""""""""88  88         88   d8YaaaaY8b                88
+88         8P  88  88           88P   Y8b    88        88  88        88  88         8P  d8""""""""8b               Y8,
+88      .a8P   88  88           88     "88,  Y8a.    .a8P  88        88  88      .a8P  d8'        `8b      888      Y8a.    .a8P
+88888888Y"'    88  88888888888  88       Y8b  `"Y8888Y"'   88        88  88888888Y"'  d8'          `8b     888       `"Y8888Y"'
 
-/* Help: see https://docs.nvidia.com/cuda/cublas/index.html for specific help when using cuda */
+Help: see https://docs.nvidia.com/cuda/cublas/index.html for specific help when using cuda */
 
 // Other libraries and dependancies:
+#include <stdio.h>
+#include <stdlib.h>
 #include "cublas_v2.h"
-#include <limits.h>
+//#include <limits.h>
 
 /********************************************/
 /* Allocation/deallocation on the host      */
@@ -48,7 +53,6 @@ Return value: NULL if an error occured */
 void kuhdaFreeV(vector *freethisvector){
   if (freethisvector == NULL){
     INPUT_NULL_ERR;
-    return NULL;
   }
   free(freethisvector->data);
   free(freethisvector);
@@ -110,7 +114,7 @@ matrix *kuhdaMallocMdiag(unsigned long r, unsigned long c){
   matrix *out = ccMatrix(r, c);
   unsigned long i, j;
   for (i = 0; i < out->r; i += c + 1){
-    *(out->data i) = 1.0;
+    *(out->data + i) = 1.0;
   }
   return out;
 }
@@ -122,7 +126,6 @@ Return value: NULL if an error occured */
 void kuhdaFreeM(matrix *freethismatrix){
   if (freethismatrix == NULL){
     INPUT_NULL_ERR;
-    return NULL;
   }
   free(freethismatrix->data);
   free(freethismatrix);
@@ -145,7 +148,7 @@ void kuhdaMatrixToGPU(unsigned long rows, unsigned long cols, matrix *hostmatrix
 
   int failure;
   double *d_matrix;
-  failure = cudaMalloc(&d_matrix, sizeof(hostmatrix->data);
+  failure = cudaMalloc(&d_matrix, sizeof(hostmatrix->data));
   if (failure != 0) {
     MEM_ERR;
     cudaFree(d_matrix);
@@ -180,8 +183,7 @@ euter *kuhdaMilchmann(int streamnums){
     return NULL;
   }
   int failure;
-  mm->handle = cublasHandle_t handle;
-  failure = cublasCreate(&handle);
+  failure = cublasCreate(&(mm->handle));
   if (failure != 0){
     FAIL_ERR(failure);
     return NULL;
@@ -195,7 +197,7 @@ euter *kuhdaMilchmann(int streamnums){
   }
 
   for (int i = 0; i < streamnums; ++i){
-    failure = cudaStreamCreate(&streams[i]);
+    failure = cudaStreamCreate(&(mm->streams)[i]);
     if (failure != 0){
       FAIL_ERR(failure);
       return NULL;
@@ -219,7 +221,7 @@ time_diff = the time it took to perform the computations with cublasDgemm,
 verbose = whether we want to print the output on the console ('0' = nothing prints, '1' = results will be printed)
 
 Return value: the number of GigaFlops (GFLOPS), or NULL if an error occured */
-long long kuhdaTimeDGEMM(unsigned long m, unsigned long n, unsigned long k, double time_diff, int verbose = 0){
+long long kuhdaTimeDGEMM(unsigned long m, unsigned long n, unsigned long k, double time_diff, int verbose){
   if (m <= 0 || n <= 0 || k <= 0){
     INPUT_ILL_ERR_LU(m);
     INPUT_ILL_ERR_LU(n);

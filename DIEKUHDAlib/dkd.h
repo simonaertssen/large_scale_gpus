@@ -1,11 +1,13 @@
-
-██████╗░ ██╗ ███████╗ ██╗░ ██╗ ██╗░  ██╗ ██╗░ ██╗ ██████╗░  █████╗░     ██╗░ ██╗
-██╔══██╗ ██║ ██╔════╝ ██║░██╔╝ ██║░  ██║ ██║░ ██║ ██╔══██╗ ██╔══██╗     ██║░ ██║
-██║░ ██║ ██║ █████╗░  █████═╝░ ██║░  ██║ ███████║ ██║░ ██║ ███████║     ███████║
-██║░ ██║ ██║ ██╔══╝░  ██╔═██╗░ ██║░  ██║ ██╔══██║ ██║░ ██║ ██╔══██║     ██╔══██║
-██████╔╝ ██║ ███████╗ ██║░╚██╗ ╚██████╔╝ ██║░ ██║ ██████╔╝ ██║░ ██║ ██╗ ██║░ ██║
-╚═════╝░ ╚═╝ ╚══════╝ ╚═╝░ ╚═╝░ ╚═════╝░ ╚═╝░ ╚═╝ ╚═════╝░ ╚═╝░ ╚═╝ ╚═╝░╚═╝░ ╚═╝
 /*
+88888888ba,    88  88888888888  88      a8P  88        88  88        88  88888888ba,         db                    88        88
+88      `"8b   88  88           88    ,88'   88        88  88        88  88      `"8b       d88b                   88        88
+88        `8b  88  88           88  ,88"     88        88  88        88  88        `8b     d8'`8b                  88        88
+88         88  88  88aaaaa      88,d88'      88        88  88aaaaaaaa88  88         88    d8'  `8b                 88aaaaaaaa88
+88         88  88  88"""""      8888"88,     88        88  88""""""""88  88         88   d8YaaaaY8b                88""""""""88
+88         8P  88  88           88P   Y8b    88        88  88        88  88         8P  d8""""""""8b               88        88
+88      .a8P   88  88           88     "88,  Y8a.    .a8P  88        88  88      .a8P  d8'        `8b      888     88        88
+88888888Y"'    88  88888888888  88       Y8b  `"Y8888Y"'   88        88  88888888Y"'  d8'          `8b     888     88        88
+
                           /|                        /|
                           | \           __ _ _     / ;
                     ___    \ \   _.-"-" `~"\  `"--' /
@@ -43,6 +45,9 @@ DTU Special course: Large Scale GPU Computing
 
 #ifndef DIEKUHDA_DEFINE
 #define DIEKUHDA_DEFINE
+
+#include <stdio.h>
+#include "cublas_v2.h"
 
 /* Macro definitions */
 #define DIEKUHDA_FAILURE -1
@@ -91,13 +96,13 @@ matrix *kuhdaMallocMdiag(unsigned long r, unsigned long c);
 void kuhdaFreeM(matrix *freethismatrix);
 
 /* Allocation/deallocation on the device(s)*/
-void kuhdaMatrixToGPU(matrix *hostmatrix);
+void kuhdaMatrixToGPU(unsigned long rows, unsigned long cols, matrix *hostmatrix);
 void kuhdaMatrixToHost(matrix *devicematrix);
 
 /* cuda-specific*/
 euter *kuhdaMilchmann(int streamnums);
 
 /* Necessary computations*/
-double kuhdaTimeDGEMM(unsigned long m );
+long long kuhdaTimeDGEMM(unsigned long m, unsigned long n, unsigned long k, double time_diff, int verbose);
 
 #endif
