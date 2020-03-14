@@ -1,12 +1,12 @@
 /*
-88888888ba,    88  88888888888  88      a8P  88        88  88        88  88888888ba,         db                    88        88
-88      `"8b   88  88           88    ,88'   88        88  88        88  88      `"8b       d88b                   88        88
-88        `8b  88  88           88  ,88"     88        88  88        88  88        `8b     d8'`8b                  88        88
-88         88  88  88aaaaa      88,d88'      88        88  88aaaaaaaa88  88         88    d8'  `8b                 88aaaaaaaa88
-88         88  88  88"""""      8888"88,     88        88  88""""""""88  88         88   d8YaaaaY8b                88""""""""88
-88         8P  88  88           88P   Y8b    88        88  88        88  88         8P  d8""""""""8b               88        88
-88      .a8P   88  88           88     "88,  Y8a.    .a8P  88        88  88      .a8P  d8'        `8b      888     88        88
-88888888Y"'    88  88888888888  88       Y8b  `"Y8888Y"'   88        88  88888888Y"'  d8'          `8b     888     88        88
+$$$$$$$\  $$$$$$\ $$$$$$$$\ $$\   $$\ $$\   $$\ $$\   $$\ $$$$$$$\   $$$$$$\      $$\   $$\
+$$  __$$\ \_$$  _|$$  _____|$$ | $$  |$$ |  $$ |$$ |  $$ |$$  __$$\ $$  __$$\     $$ |  $$ |
+$$ |  $$ |  $$ |  $$ |      $$ |$$  / $$ |  $$ |$$ |  $$ |$$ |  $$ |$$ /  $$ |    $$ |  $$ |
+$$ |  $$ |  $$ |  $$$$$\    $$$$$  /  $$ |  $$ |$$$$$$$$ |$$ |  $$ |$$$$$$$$ |    $$$$$$$$ |
+$$ |  $$ |  $$ |  $$  __|   $$  $$<   $$ |  $$ |$$  __$$ |$$ |  $$ |$$  __$$ |    $$  __$$ |
+$$ |  $$ |  $$ |  $$ |      $$ |\$$\  $$ |  $$ |$$ |  $$ |$$ |  $$ |$$ |  $$ |    $$ |  $$ |
+$$$$$$$  |$$$$$$\ $$$$$$$$\ $$ | \$$\ \$$$$$$  |$$ |  $$ |$$$$$$$  |$$ |  $$ |$$\ $$ |  $$ |
+\_______/ \______|\________|\__|  \__| \______/ \__|  \__|\_______/ \__|  \__|\__|\__|  \__|
 
                           /|                        /|
                           | \           __ _ _     / ;
@@ -33,14 +33,14 @@
                           |_ _\|_ _\
                             "    "
 
-DTU Special course: Large Scale GPU Computing
-  Authors: Simon Aertssen (s181603) and Louis Hein (s181573)
-  Supervisors: Bernd Damman and Hans Henrik Brandenborg Soerensen
-  DIEKUHDA (pronounce "dcuda"):  Basic data structures, allocation/deallocation
-  routines, and input/output routines for matrices, to be used in the
+DTU Special course: Large Scale GPU Computin
+Authors: Simon Aertssen (s181603) and Louis Hein (s181573)
+Supervisors: Bernd Damman and Hans Henrik Brandenborg Soerensen
 
-  Version: 1.0 13/03/2020
-  Appreciate the ascii art @ fsymbols.com
+DIEKUHDA (pronounce "dcuda"):  Basic data structures, allocation/deallocation
+routines, and input/output routines for matrices, to be used in the
+
+Version: 1.0 13/03/2020
 */
 
 #ifndef DIEKUHDA_DEFINE
@@ -64,16 +64,21 @@ DTU Special course: Large Scale GPU Computing
 #define INPUT_ILL_ERR_LU(x) fprintf(stderr,"%s: received illegal input %u\n",__func__, x)
 
 
-█▀ ▀█▀ █▀█ █░█ █▀▀ ▀█▀ █░█ █▀█ █▀▀ █▀
-▄█ ░█░ █▀▄ █▄█ █▄▄ ░█░ █▄█ █▀▄ ██▄ ▄█
+/* _____ _______ _____  _    _  _____ _______ _    _ _____  ______  _____
+  / ____|__   __|  __ \| |  | |/ ____|__   __| |  | |  __ \|  ____|/ ____|
+ | (___    | |  | |__) | |  | | |       | |  | |  | | |__) | |__  | (___
+  \___ \   | |  |  _  /| |  | | |       | |  | |  | |  _  /|  __|  \___ \
+  ____) |  | |  | | \ \| |__| | |____   | |  | |__| | | \ \| |____ ____) |
+ |_____/   |_|  |_|  \_\\____/ \_____|  |_|   \____/|_|  \_\______|_____/
+*/
 /* Structure representing a DIEKUHDA vector */
-typedef struct vector {
+typedef struct dkdvector {
   unsigned long r;   /* number of elements */
   double * data;     /* pointer to array of length r */
 } vector;
 
 /* Structure representing a DIEKUHDA matrix */
-typedef struct matrix {
+typedef struct dkdmatrix {
   unsigned long r;   /* number of rows */
   unsigned long c;   /* number of columns */
   double * data;     /* pointer to array of length r*c */
@@ -85,8 +90,13 @@ typedef struct euter {
 } euter;
 
 
-█▀▀ █░█ █▄░█ █▀▀ ▀█▀ █ █▀█ █▄░█ █▀
-█▀░ █▄█ █░▀█ █▄▄ ░█░ █ █▄█ █░▀█ ▄█
+/*______ _    _ _   _  _____ _______ _____ ____  _   _  _____
+|  ____| |  | | \ | |/ ____|__   __|_   _/ __ \| \ | |/ ____|
+| |__  | |  | |  \| | |       | |    | || |  | |  \| | (___
+|  __| | |  | | . ` | |       | |    | || |  | | . ` |\___ \
+| |    | |__| | |\  | |____   | |   _| || |__| | |\  |____) |
+|_|     \____/|_| \_|\_____|  |_|  |_____\____/|_| \_|_____/
+*/
 /* Allocation/deallocation on the host*/
 vector *kuhdaMallocV(unsigned long r);
 void kuhdaFreeV(vector *freethisvector);

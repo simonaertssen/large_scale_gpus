@@ -1,13 +1,14 @@
 #include <stdio.h>
-#include <DIEKUHDAlib>
-#include </dkd.h>
+#include "../DIEKUHDAlib/dkd.h"
 
-
-// This script contains some numerical tests to get to know cublas
-// and how to split up matrices in blocks for gpu computation.
 // Run with:
-// nvcc -lcublas -lgomp experiment_1.cu && ./a.out
+// nvcc ../DIEKUHDAlib/dkd.c -lcublas testDIEKUHDAlib.cu && ./a.out
 
 int main(){
-    printf("Hello world");
+	unsigned long r = 10;
+	vector *test = kuhdaMallocV(r);
+
+    printf("Hello world\n");
+
+	return 0;
 }
