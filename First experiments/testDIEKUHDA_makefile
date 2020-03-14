@@ -1,15 +1,15 @@
-# run me with make -f testDIEKUHDAlib_makefile
+# run me with make -f testDIEKUHDA_makefile
 OPT = -O3
 LIB = -lcublas -lgomp
-INCL = -I../DIEKUHDAlib
+INCL = -I../DIEKUHDA
 ARC = -arch=sm_70
 
 CC = nvcc
 CFLAGS  = $(OPT) $(LIB) $(ARC)
 
 # the build target executable:
-TARGET = testDIEKUHDAlib
-DKDLIB = ../DIEKUHDAlib/dkd.c
+TARGET = testDIEKUHDA
+DKDLIB = ../DIEKUHDA/kuhda.c
 
 all: $(TARGET) clean
 

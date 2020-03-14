@@ -1,8 +1,8 @@
 #include <stdio.h>
-#include "../DIEKUHDAlib/dkd.h"
+#include "../DIEKUHDA/kuhda.h"
 
 // Run with:
-// nvcc ../DIEKUHDAlib/dkd.c -lcublas testDIEKUHDAlib.cu && ./a.out
+// nvcc ../DIEKUHDA/kuhda.c -lcublas testDIEKUHDA.cu && ./a.out
 
 int main(){
 	unsigned long r = 10;
