@@ -33,7 +33,7 @@ $$$$$$$  |$$$$$$\ $$$$$$$$\ $$ | \$$\ \$$$$$$  |$$ |  $$ |$$$$$$$  |$$ |  $$ |$$
                           |_ _\|_ _\
                             "    "
 
-DTU Special course: Large Scale GPU Computin
+DTU Special course: Large Scale GPU Computing
 Authors: Simon Aertssen (s181603) and Louis Hein (s181573)
 Supervisors: Bernd Damman and Hans Henrik Brandenborg Soerensen
 

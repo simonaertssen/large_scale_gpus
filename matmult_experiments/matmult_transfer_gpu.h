@@ -18,7 +18,7 @@ extern "C" {
 		checkCudaErrors(cudaMalloc((void**)d_A, size_A)); 
 		checkCudaErrors(cudaMalloc((void**)d_B, size_B)); 
 		checkCudaErrors(cudaMalloc((void**)d_C, size_C)); 
-        printf("Allocating on gpu             | %5.4f s\n", omp_get_wtime() - time0);
+        // printf("Allocating on gpu             | %5.4f s\n", omp_get_wtime() - time0);
 	}
 
 	inline void transfer_to_gpu(int m, int n, int k, double *A, double *B, double *C, double *d_A, double *d_B, double *d_C)
@@ -34,7 +34,7 @@ extern "C" {
 		checkCudaErrors(cudaMemcpy(d_A, A, size_A, cudaMemcpyHostToDevice));
 		checkCudaErrors(cudaMemcpy(d_B, B, size_B, cudaMemcpyHostToDevice));
         time0 = omp_get_wtime() - time0;
-        printf("Transfering A and B to device | %5.4f s %3.2f GB %3.2f GB/s\n", time0, (double) (size_A + size_B) * 1e-9, (double) (size_A + size_B) * 1e-9 / time0);
+        // printf("Transfering A and B to device | %5.4f s %3.2f GB %3.2f GB/s\n", time0, (double) (size_A + size_B) * 1e-9, (double) (size_A + size_B) * 1e-9 / time0);
 		//checkCudaErrors(cudaMemsetAsync(d_C, 0, size_C, cudaStreamPerThread));
 		checkCudaErrors(cudaMemset(d_C, 0, size_C));
 	}

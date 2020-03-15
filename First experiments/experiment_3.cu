@@ -64,12 +64,12 @@ int main(){
     // Now the CUDA part:
     // Create cublas instance and stream
     cublasHandle_t handle;
-    if ( cublasCreate(&handle) != 0 ) printf("cublasCreate faileds\n");
+    if ( cublasCreate(&handle) != 0 ) printf("cublasCreate failed\n");
     cudaStream_t *stream = (cudaStream_t *) malloc(sizeof(cudaStream_t));
-    if ( cudaStreamCreate(&stream[0]) != 0 ) printf("cudaStreamCreate faileds\n");
+    if ( cudaStreamCreate(&stream[0]) != 0 ) printf("cudaStreamCreate failed\n");
 
     // Send matrix to GPU:
-    if ( cublasSetMatrix(n, n, sizeof(double), A, n, C, n) != 0 ) printf("cublasSetMatrix faileds\n");
+    if ( cublasSetMatrix(n, n, sizeof(double), A, n, C, n) != 0 ) printf("cublasSetMatrix failed\n");
 
     // Set matrix coefficients
     double alpha = 1.0;
@@ -97,7 +97,7 @@ int main(){
 
     // Time the computations as in "How to compute GFLOPS for GEMM BLAS?" - nvidia forum
     // See: https://devtalk.nvidia.com/default/topic/482834/how-to-compute-gflops-for-gemm-blas/
-    printf("Elapsed itme is %lf seconds\n", t2 - t1);
+    printf("Elapsed time is %lf seconds\n", t2 - t1);
     gflops = (long long)(n_squared * (2*n + 2)) / (1.0e9 *(t2 - t1));
     printf("Timed %lf GFLPS .. hah \n", gflops);
 

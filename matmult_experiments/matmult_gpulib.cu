@@ -15,7 +15,7 @@ extern "C" {
 		double *d_A, *d_B, *d_C;
         allocate_on_gpu(m, n, k, &d_A, &d_B, &d_C);
 		transfer_to_gpu(m,n,k,A,B,C,d_A,d_B,d_C);
-        printf("Computing C = A * B           ");
+        // printf("Computing C = A * B           ");
         double time0 = omp_get_wtime();
         cublasHandle_t handle;
         cublasCreate(&handle);
@@ -25,7 +25,8 @@ extern "C" {
 		//cublasDgemm('N', 'N', m, n, k, 1.0, d_A, m, d_B, k, 0.0, d_C, m); // Col major.
 		cudaDeviceSynchronize();
         cublasDestroy(handle);
-        time0 = omp_get_wtime() - time0; printf("Computing C = A * B           | %5.4f s %5.4f Gflops\n", time0, 2.0 * m * n * k * 1e-9 / time0);
+        time0 = omp_get_wtime() - time0; 
+        // printf("Computing C = A * B           | %5.4f s %5.4f Gflops\n", time0, 2.0 * m * n * k * 1e-9 / time0);
         transfer_from_gpu(m, n, C, d_C);
         free_on_gpu(d_A, d_B, d_C);
 	}

@@ -1,0 +1,24 @@
+    96.000    542.450 0 # matmult_gpulib
+    96.000    544.211 0 # matmult_gpulib
+    96.000    555.498 0 # matmult_gpulib
+   384.000   4278.477 0 # matmult_gpulib
+   384.000   3926.698 0 # matmult_gpulib
+   384.000   4253.086 0 # matmult_gpulib
+  1536.000  30845.334 0 # matmult_gpulib
+  1536.000  31079.285 0 # matmult_gpulib
+  1536.000  29149.008 0 # matmult_gpulib
+  6144.000 114384.043 0 # matmult_gpulib
+  6144.000 114017.418 0 # matmult_gpulib
+  6144.000 113984.538 0 # matmult_gpulib
+ 24576.000 420794.008 0 # matmult_gpulib
+ 24576.000 488366.061 0 # matmult_gpulib
+ 24576.000 486296.587 0 # matmult_gpulib
+ 98304.000 1188470.231 300 # matmult_gpulib
+ 98304.000 1196323.919 300 # matmult_gpulib
+ 98304.000 1196630.036 300 # matmult_gpulib
+393216.000 2234536.436 19200 # matmult_gpulib
+393216.000 2241374.737 19200 # matmult_gpulib
+393216.000 2242593.581 19200 # matmult_gpulib
+1572864.000 3524680.067 1.2288e+06 # matmult_gpulib
+1572864.000 3546723.483 1.2288e+06 # matmult_gpulib
+1572864.000 3551443.337 1.2288e+06 # matmult_gpulib
