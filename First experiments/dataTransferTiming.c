@@ -1,11 +1,14 @@
 #include <stdio.h>
 #include "../DIEKUHDA/kuhda.h"
+#include <omp.h>
+
 
 // Run with:
 // nvcc -lcublas -lgomp ../DIEKUHDA/kuhda.c dataTransfer.c && ./a.out
 
 int main(){
-	unsigned long n = 1000, size = n * n * sizeof(double);
+	unsigned long n = 10000, size = n * n * sizeof(double);
+	printf("Size = %u\n", size);
 
 	struct cudaDeviceProp prop;
 	int i, device, devicecount;
@@ -22,13 +25,21 @@ int main(){
 	}
 
 	// Send data around cyclicly:
-	int destinations[4] = {1, 2, 3, 0}, destination;
+	double t1, t2;
+	unsigned long result;
+	int destinations[4] = {1, 2, 3, 0}, destination, reps = 10, rep;
 	for (device = 0; device < devicecount; ++device){
 		destination = destinations[device];
 		gpuErrchk(cudaSetDevice(device));
 		printf("Sending data from %d to %d\n", device, destination);
 
-		gpuErrchk(cudaMemcpy(d_All[device]->data, d_All[destination]->data, n*n*sizeof(double), cudaMemcpyDeviceToDevice));
+		t1 = omp_get_wtime();
+		for (rep = 0; rep < reps; ++rep){
+			gpuErrchk(cudaMemcpy(d_All[device]->data, d_All[destination]->data, size, cudaMemcpyDeviceToDevice));
+		}
+		t2 = omp_get_wtime();
+		result = (unsigned long) (reps * size) / (1.0e9 * (t2 - t1) ) ;
+		printf("Registered a transfer of %u Gb/s \n", result);
 	}
 
 
