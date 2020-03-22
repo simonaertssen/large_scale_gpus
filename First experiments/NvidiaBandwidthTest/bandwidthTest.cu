@@ -33,6 +33,9 @@
  *
  * Usage:
  * ./bandwidthTest [option]...
+ *
+ * example options: --device=all --memory=pinned
+ * see all options with ./bandwidthTest --help
  */
 
 // CUDA runtime
