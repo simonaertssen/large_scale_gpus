@@ -1,0 +1,16 @@
+	[4mGPU0	GPU1	GPU2	GPU3	mlx5_0	CPU Affinity[0m
+GPU0	 X 	NV1	NV1	NV2	SYS	0-15
+GPU1	NV1	 X 	NV2	NV1	SYS	0-15
+GPU2	NV1	NV2	 X 	NV2	SYS	0-15
+GPU3	NV2	NV1	NV2	 X 	SYS	0-15
+mlx5_0	SYS	SYS	SYS	SYS	 X 	
+
+Legend:
+
+  X    = Self
+  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)
+  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node
+  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)
+  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)
+  PIX  = Connection traversing at most a single PCIe bridge
+  NV#  = Connection traversing a bonded set of # NVLinks

@@ -2,9 +2,8 @@
 #include "../DIEKUHDA/kuhda.h"
 #include <omp.h>
 
-
 // Run with:
-// nvcc -lcublas -lgomp ../DIEKUHDA/kuhda.c dataTransfer.c && ./a.out
+// nvcc -lgomp ../DIEKUHDA/kuhda.c dataTransferTiming.c && ./a.out
 
 int main(){
 	unsigned long n = 20000, size = n * n * sizeof(double);
