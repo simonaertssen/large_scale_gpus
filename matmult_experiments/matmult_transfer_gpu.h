@@ -15,9 +15,9 @@ extern "C" {
 		long size_B = k * n * sizeof(double);
 		long size_C = m * n * sizeof(double);
         double time0 = omp_get_wtime();
-		checkCudaErrors(cudaMalloc((void**)d_A, size_A)); 
-		checkCudaErrors(cudaMalloc((void**)d_B, size_B)); 
-		checkCudaErrors(cudaMalloc((void**)d_C, size_C)); 
+		checkCudaErrors(cudaMalloc((void**)d_A, size_A));
+		checkCudaErrors(cudaMalloc((void**)d_B, size_B));
+		checkCudaErrors(cudaMalloc((void**)d_C, size_C));
         // printf("Allocating on gpu             | %5.4f s\n", omp_get_wtime() - time0);
 	}
 
@@ -28,7 +28,7 @@ extern "C" {
 		long size_C = m * n * sizeof(double);
 
 		// Transfer data to device
-        double time0 = omp_get_wtime();       
+        double time0 = omp_get_wtime();
 		//checkCudaErrors(cudaMemcpyAsync(d_A, A, size_A, cudaMemcpyHostToDevice, cudaStreamPerThread));
 		//checkCudaErrors(cudaMemcpyAsync(d_B, B, size_B, cudaMemcpyHostToDevice, cudaStreamPerThread));
 		checkCudaErrors(cudaMemcpy(d_A, A, size_A, cudaMemcpyHostToDevice));

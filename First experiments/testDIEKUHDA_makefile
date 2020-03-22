@@ -1,7 +1,6 @@
 # run me with make -f testDIEKUHDA_makefile
 OPT = -O3
 LIB = -lcublas -lgomp
-INCL = -I../DIEKUHDA
 ARC = -arch=sm_70
 
 CC = nvcc
@@ -13,9 +12,9 @@ DKDLIB = ../DIEKUHDA/kuhda.c
 
 all: $(TARGET) clean
 
-$(TARGET): $(TARGET).cu
+$(TARGET): $(TARGET).c
 	@echo  ------Start of the program
-	$(CC) $(CFLAGS) $(DKDLIB) -o $(TARGET) $(TARGET).cu && $(TARGET)
+	$(CC) $(CFLAGS) $(DKDLIB) -o $(TARGET) $(TARGET).c && $(TARGET)
 	@echo  ------End of the program
 
 clean:
