@@ -291,7 +291,7 @@ long long kuhdaTimeDGEMM(matrix *d_matrix, int reps, int verbose){
 		return -1;
 	}
 	cudaStream_t stream = (cudaStream_t) malloc(sizeof(cudaStream_t));
-    gpuErrchk(cudaStreamCreate(&stream));
+  gpuErrchk(cudaStreamCreate(&stream));
 	failure = cublasSetStream(handle, stream);
 	if (failure != 0){
 		FAIL_ERR(failure);

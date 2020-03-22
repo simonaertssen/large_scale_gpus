@@ -45,7 +45,7 @@ int main(){
 		}
 		gpuErrchk(cudaDeviceSynchronize(device));
 
-	    gpuErrchk(cudaEventRecord(stop, 0));
+	   gpuErrchk(cudaEventRecord(stop, 0));
 		gpuErrchk(cudaEventSynchronize(stop));
 		gpuErrchk(cudaEventElapsedTime(&milliseconds, start, stop));
 
