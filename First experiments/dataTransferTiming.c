@@ -7,7 +7,7 @@
 // nvcc -lcublas -lgomp ../DIEKUHDA/kuhda.c dataTransfer.c && ./a.out
 
 int main(){
-	unsigned long n = 10000, size = n * n * sizeof(double);
+	unsigned long n = 20000, size = n * n * sizeof(double);
 	printf("Size = %u\n", size);
 
 	struct cudaDeviceProp prop;
@@ -25,21 +25,35 @@ int main(){
 	}
 
 	// Send data around cyclicly:
-	double t1, t2;
-	unsigned long result;
-	int destinations[4] = {1, 2, 3, 0}, destination, reps = 10, rep;
+	double t1, t2, result;
+	float milliseconds;
+	//unsigned long result;
+	cudaEvent_t start, stop;
+
+	int destinations[4] = {1, 2, 3, 0}, destination, reps = 1000, rep;
 	for (device = 0; device < devicecount; ++device){
 		destination = destinations[device];
 		gpuErrchk(cudaSetDevice(device));
 		printf("Sending data from %d to %d\n", device, destination);
 
-		t1 = omp_get_wtime();
+		gpuErrchk(cudaEventCreate(&start));
+		gpuErrchk(cudaEventCreate(&stop));
+
+		gpuErrchk(cudaEventRecord(start, 0));
 		for (rep = 0; rep < reps; ++rep){
-			gpuErrchk(cudaMemcpy(d_All[device]->data, d_All[destination]->data, size, cudaMemcpyDeviceToDevice));
+			gpuErrchk(cudaMemcpy((d_All[device])->data, (d_All[destination])->data, size, cudaMemcpyDeviceToDevice));
 		}
-		t2 = omp_get_wtime();
-		result = (unsigned long) (reps * size) / (1.0e9 * (t2 - t1) ) ;
-		printf("Registered a transfer of %u Gb/s \n", result);
+		gpuErrchk(cudaDeviceSynchronize(device));
+
+	    gpuErrchk(cudaEventRecord(stop, 0));
+		gpuErrchk(cudaEventSynchronize(stop));
+		gpuErrchk(cudaEventElapsedTime(&milliseconds, start, stop));
+
+		result = (reps * size) / (1.0e6 * milliseconds ) ;
+		printf("Registered a transfer of %.3lf Gb/s \n", result);
+
+		gpuErrchk(cudaEventDestroy(start));
+		gpuErrchk(cudaEventDestroy(stop));
 	}
 
 

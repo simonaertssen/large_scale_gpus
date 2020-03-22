@@ -18,7 +18,7 @@ int main(){
 	gpuErrchk(cudaGetDeviceCount(&devicecount));
 	struct cudaDeviceProp prop;
 	cudaGetDeviceProperties(&prop, device);
-	printf("We are working on device %s: %d of %d\n", prop.name, device, devicecount - 1);
+	printf("We are working on device %s: %d of %d\n", prop.name, device, devicecount);
 
 	long long gflops = kuhdaTimeDGEMM(d_A, 1, 1);
 
