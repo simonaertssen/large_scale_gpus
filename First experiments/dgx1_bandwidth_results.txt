@@ -1,0 +1,66 @@
+
+Experiment results using dataTransferTiming2.c with various matrix sizes
+
+
+Notice higher CPU-GPU transfer rates for smaller matrices and higher
+GPU-GPU rates for larger matrices (no more significant changes above n=5000)
+
+
+Measuring: n = 100
+Sending 0.0001 GB of memory between host and devices
+        GPU0    GPU1    GPU2    GPU3    host    
+GPU0      X     5.882   7.375   9.058   2.193
+GPU1    7.692     X     9.843   8.562   2.075
+GPU2    7.082   9.843     X    11.574   2.008
+GPU3    7.463   8.503  12.887     X     2.117
+host    2.193   2.075   2.008   2.117     X  
+
+
+Measuring: n = 1000 
+Sending 0.008 GB of memory between host and devices
+        GPU0    GPU1    GPU2    GPU3    host    
+GPU0      X    44.476  23.578  23.699   3.328
+GPU1   45.053     X    46.468  23.717   7.481
+GPU2   23.487  46.494     X    46.642   7.625
+GPU3   23.509  23.771  46.703     X     7.445
+host    3.328   7.481   7.625   7.445     X  
+
+Masuring: n = 5000
+Sending 0.2000 GB of memory between host and devices
+        GPU0    GPU1    GPU2    GPU3    host    
+GPU0      X     48.37   24.23   24.24    1.36
+GPU1    48.32     X     48.43   24.24    4.96
+GPU2    24.23   48.45     X     48.43    4.96
+GPU3    24.24   24.25   48.45     X      4.94
+host     1.36    4.96    4.96    4.94     X  
+
+Masuring: n = 10000
+Sending 0.8000 GB of memory between host and devices
+        GPU0    GPU1    GPU2    GPU3    host    
+GPU0      X     48.47   24.25   24.25    1.30
+GPU1    48.48     X     48.50   24.25    4.73
+GPU2    24.25   48.50     X     48.49    4.75
+GPU3    24.26   24.26   48.51     X      4.76
+host     1.30    4.73    4.75    4.76     X  
+
+
+Masuring: n = 20000
+Sending 3.2000 GB of memory between host and devices
+        GPU0    GPU1    GPU2    GPU3    host    
+GPU0      X     48.51   24.26   24.26    1.28
+GPU1    48.52     X     48.52   24.26    4.63
+GPU2    24.26   48.52     X     48.52    4.17
+GPU3    24.26   24.26   48.52     X      4.16
+host     1.28    4.63    4.17    4.16     X  
+
+_______________________________________________________________
+
+
+NVidia reference benchmark:
+
+Unidirectional P2P=Enabled Bandwidth (P2P Writes) Matrix (GB/s)
+   D\D      0      1      2      3 
+     0 731.42  47.56  23.89  24.06 
+     1  48.34 745.65  48.35  24.22 
+     2  24.22  48.33 743.65  48.35 
+     3  24.22  24.22  48.35 744.45 
