@@ -2,7 +2,7 @@
 #include "../DIEKUHDA/kuhda.h"
 
 // Run with:
-// nvcc ../DIEKUHDA/kuhda.c dataTransferTiming2.c && ./a.out
+// nvcc -lcublas ../DIEKUHDA/kuhda.c dataTransferTiming2.c && ./a.out
 
 int main(){
 	// Set verbose to 0 to mute output
