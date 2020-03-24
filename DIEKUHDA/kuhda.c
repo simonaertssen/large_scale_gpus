@@ -179,7 +179,8 @@ matrix *kuhdaMatrixToGPU(unsigned long rows, unsigned long cols, matrix *h_matri
 
 	cudaError_t failure;
 	matrix *d_matrix = kuhdaMallocM(rows, cols);
-	failure = gpuErrchk(cudaMalloc(&d_matrix->data, rows*cols*sizeof(double)));
+	// failure = gpuErrchk(cudaMalloc(&d_matrix->data, rows*cols*sizeof(double))); 
+	failure = gpuErrchk(cudaMalloc((void**)&d_matrix->data, rows*cols*sizeof(double))); // Tip from HH
 	if (failure != 0) {
 		MEM_ERR;
 		kuhdaFreeM(d_matrix, 'k');
