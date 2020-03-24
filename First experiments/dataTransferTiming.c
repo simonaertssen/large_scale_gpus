@@ -6,7 +6,7 @@
 // nvcc -lgomp ../DIEKUHDA/kuhda.c dataTransferTiming.c && ./a.out
 
 int main(){
-	unsigned long n = 20000, size = n * n * sizeof(double);
+	unsigned long n = 10000, size = n * n * sizeof(double);
 	printf("Size = %u\n", size);
 
 	struct cudaDeviceProp prop;

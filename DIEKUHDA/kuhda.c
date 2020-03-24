@@ -134,7 +134,7 @@ void kuhdaFreeM(matrix *freethismatrix, char type){
 
 
 /********************************************/
-/* Allocation/deallocation on the device(s) */
+/*    Vector / Matrix printing utilities    */
 /********************************************/
 void kuhdaPrintV(vector *printthisvector){
 	if (printthisvector == NULL){
@@ -184,7 +184,7 @@ matrix *kuhdaMatrixToGPU(unsigned long rows, unsigned long cols, matrix *h_matri
 	if (failure != 0) {
 		MEM_ERR;
 		kuhdaFreeM(d_matrix, 'k');
-	}
+	} // rows, cols = which tile of rows x cols is taken from the host matrix
 
 	//failure = cublasSetMatrix(rows, cols, sizeof(double*), h_matrix->data, rows, d_matrix->data, rows);
 	//failure = cudaMemcpy2D(&h_matrix->data, &d_matrix->data, rows*cols*sizeof(double), cudaMemcpyHostToDevice);
@@ -211,11 +211,11 @@ void kuhdaMatrixToHost(unsigned long rows, unsigned long cols, matrix *d_matrix,
 
 
 /********************************************/
-/* cuda-specific														*/
+/* cuda-specific							*/
 /********************************************/
 
-/* kuhdaMilchmann(matrix *h_matrix): allocate a matrix on the device and copy contents of host matrix.
-Arguments: rows, cols = which tile of rows x cols is taken from the host matrix
+/* kuhdaMilkCan(int streamnums): 
+Arguments: number of streams
 Return value: euter with strams and handles, or NULL if an error occured */
 can *kuhdaMilkCan(int streamnums){
 	if (streamnums <= 0){
@@ -265,7 +265,7 @@ cudaError_t gpuAssert(cudaError_t code, const char *file, int line){
 
 
 /********************************************/
-/* Necessary computations									 */
+/* Necessary computations					*/
 /********************************************/
 
 /* kuhdaTimeDGEMM(unsigned long m, unsigned long n, unsigned long k): compute the number of
