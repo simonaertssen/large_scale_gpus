@@ -8,9 +8,9 @@ int main(){
 	// Set verbose to 0 to mute output
 	int verbose = 0;
 
-	unsigned long n = 1000, size = n * n * sizeof(double);
+	unsigned long n = 5000, size = n * n * sizeof(double);
 	double printmem = size / 1.0e9;
-	printf("Start measuring sending %.3f GB of memory between host and devices\n", printmem);
+	printf("Masuring: n = %d\nSending %.4f GB of memory between host and devices\n", n, printmem);
 
 	// Get the overall structure setup
 	int devicecount;
@@ -129,14 +129,14 @@ int main(){
 			if (j == i) {
 				printf("     X  ");
 			} else {
-				printf("%8.3lf", results[pr_ctr++]);
+				printf("%8.2lf", results[pr_ctr++]);
 			}
 		}
 		printf("\n");
 	}
 	printf("host  ");
 	for (i = 0; i < devicecount; ++i){
-		printf(" %6.3lf ", results[4*(i+1) - 1]);
+		printf(" %6.2lf ", results[4*(i+1) - 1]);
 	}
 	printf("    X  \n");
 
