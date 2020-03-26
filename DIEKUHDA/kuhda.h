@@ -48,9 +48,8 @@ Version: 1.0 13/03/2020
 
 #include <stdio.h>
 #include <stdlib.h>
-//#include <cuda_runtime_api.h> // Tip from HH
+#include <cuda_runtime_api.h> // Tip from HH
 #include "cublas_v2.h"
-//#include <cuda_runtime_api.h> // Tip from HH
 
 
 /* Macro definitions */

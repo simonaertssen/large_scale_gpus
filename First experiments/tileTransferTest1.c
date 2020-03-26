@@ -23,16 +23,6 @@ int main(){
 	kuhdaPrintM(h_A);
 
 	// ...retrieve it again
-
-	/* 
-	cudaStream_t *stream;
-	stream = (cudaStream_t *) malloc(sizeof(cudaStream_t));
-	gpuErrchk(cudaStreamCreate(&stream));
-	// inputs: (void *dst, const void *src, size_t count, enum cudaMemcpyKind	kind, cudaStream_t stream)
-	gpuErrchk(cudaMemcpy(h_A1->data, d_A1->data, sizex, cudaMemcpyDeviceToHost, stream));
-	*/
-
-	// cleaner way:
 	kuhdaMatrixToHost(x, x, d_A1, h_A1);
 
 	// print retrieved matrix
