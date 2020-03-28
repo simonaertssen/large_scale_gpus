@@ -177,7 +177,7 @@ matrix *kuhdaMatrixToGPU(unsigned long rows, unsigned long cols, matrix *h_matri
 
 	cudaError_t failure;
 	matrix *d_matrix = kuhdaMallocM(rows, cols);
-	// failure = gpuErrchk(cudaMalloc(&d_matrix->data, rows*cols*sizeof(double))); 
+	// failure = gpuErrchk(cudaMalloc(&d_matrix->data, rows*cols*sizeof(double)));
 	failure = gpuErrchk(cudaMalloc((void**)&d_matrix->data, rows*cols*sizeof(double))); // Tip from HH
 	if (failure != 0) {
 		MEM_ERR;
@@ -195,6 +195,47 @@ matrix *kuhdaMatrixToGPU(unsigned long rows, unsigned long cols, matrix *h_matri
 	return d_matrix;
 }
 
+/* kuhdaTileToGPU(matrix *h_matrix): allocate a matrix on the device and copy contents of host matrix.
+Arguments: rows, cols = which tile of rows x cols is taken from the host matrix
+Return value: NULL if an error occured */
+double *kuhdaTileToGPU(unsigned long rowstart,unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *h_matrix){
+	if (h_matrix == NULL) 	INPUT_NULL_ERR;
+	if (rowstart > rowstop) INPUT_ILL_ERR_LU(rowstop);
+	if (colstart > colstop)	INPUT_ILL_ERR_LU(colstop);
+
+	unsigned long rows = rowstop - rowstart, cols = colstop - colstart;
+	unsigned long i, j;
+	double *memacc = (double*)malloc(cols*sizeof(double));
+
+	cudaError_t failure;
+	// matrix *d_tile = kuhdaMallocM(rows, cols);
+	double *d_tile = NULL;
+
+
+	// failure = gpuErrchk(cudaMalloc(&d_matrix->data, rows*cols*sizeof(double)));
+	failure = gpuErrchk(cudaMalloc((void**)&d_tile, rows*cols*sizeof(double))); // Tip from HH
+	if (failure != 0) {
+		MEM_ERR;
+		cudaFree(d_tile);
+	//	kuhdaFreeM(d_matrix, 'k');
+	} // rows, cols = which tile of rows x cols is taken from the host matrix
+
+	// 'strided' copy
+	for (i=rowstart; i<rowstop; ++i){
+		for (j=colstart; j<colstop; ++j){
+				memacc[j] = h_matrix->data[i * h_matrix->c + j];
+		}
+		printf("%zu", sizeof(d_tile[0] + (cols * (i-rowstart))));
+		failure = gpuErrchk(cudaMemcpy((void**)d_tile[0] + (cols * (i-rowstart)), memacc, cols*sizeof(double), cudaMemcpyHostToDevice)));
+		if (failure != 0) {
+			FAIL_ERR(failure);
+			cudaFree(d_tile);
+		}
+	}
+
+	return d_tile;
+}
+
 void kuhdaMatrixToHost(unsigned long rows, unsigned long cols, matrix *d_matrix, matrix *h_matrix){
 	if (h_matrix == NULL || d_matrix == NULL){
 			INPUT_NULL_ERR;
@@ -207,12 +248,25 @@ void kuhdaMatrixToHost(unsigned long rows, unsigned long cols, matrix *d_matrix,
 	}
 }
 
+void kuhdaTileToHost(unsigned long rows, unsigned long cols, double *d_tile, matrix *h_matrix){
+	if (h_matrix == NULL || d_matrix == NULL) INPUT_NULL_ERR;
+	if (rows != h_matrix->r) INPUT_ILL_ERR_LU(rows);
+	if (cols != h_matrix->c) INPUT_ILL_ERR_LU(cols);
+
+	//int failure = cublasGetMatrix(rows, cols, sizeof(double), d_matrix->data, d_matrix->r, h_matrix->data, h_matrix->r);
+	//int failure = cudaMemcpy2D(h_matrix->data, d_matrix->data, rows*cols*sizeof(double), cudaMemcpyDeviceToHost);
+	cudaError_t failure = gpuErrchk(cudaMemcpy(h_matrix->data, d_tile, rows*cols*sizeof(double), cudaMemcpyDeviceToHost));
+	if (failure != 0){
+		FAIL_ERR(failure);
+	}
+}
+
 
 /********************************************/
 /* cuda-specific							*/
 /********************************************/
 
-/* kuhdaMilkCan(int streamnums): 
+/* kuhdaMilkCan(int streamnums):
 Arguments: number of streams
 Return value: euter with strams and handles, or NULL if an error occured */
 can *kuhdaMilkCan(int streamnums){

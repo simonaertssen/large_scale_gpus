@@ -114,7 +114,9 @@ void kuhdaPrintM(matrix *printhismatrix);
 
 /* Allocation/deallocation on the device(s)*/
 matrix *kuhdaMatrixToGPU(unsigned long rows, unsigned long cols, matrix *h_matrix);
+double *kuhdaTileToGPU(unsigned long rowstart,unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *h_matrix);
 void kuhdaMatrixToHost(unsigned long rows, unsigned long cols, matrix *d_matrix, matrix *h_matrix);
+void kuhdaTileToHost(unsigned long rows, unsigned long cols, double *d_tile, matrix *h_matrix);
 
 /* cuda-specific*/
 can *kuhdaMilkCan(int streamnums);

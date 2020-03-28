@@ -17,13 +17,13 @@ int main(){
 
 	// Send the first quarter tile of A to device 0...
 	gpuErrchk(cudaSetDevice(0));
-	matrix *d_A1 = kuhdaMatrixToGPU(x, x, h_A);
+	double *d_A1 = kuhdaTileToGPU(0, x, 0, x, h_A);
 
 	printf("n = %d\nThe full matrix is:\n", n);
 	kuhdaPrintM(h_A);
 
 	// ...retrieve it again
-	kuhdaMatrixToHost(x, x, d_A1, h_A1);
+	kuhdaTileToHost(x, x, d_A1, h_A1);
 
 	// print retrieved matrix
 	printf("\nFirst tile expected output: %d x %d identity matrix.\n", x, x);
