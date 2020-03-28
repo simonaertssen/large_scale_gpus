@@ -6,7 +6,7 @@
 
 int main(){
 	// Set verbose to 0 to mute output
-	int verbose = 1;
+	int verbose = 0;
 
 	unsigned long n = 8000, size = n * n * sizeof(double);
 	double printmem = size / 1.0e9;
