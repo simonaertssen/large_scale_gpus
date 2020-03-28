@@ -15,18 +15,25 @@ int main(){
 	matrix *h_A = kuhdaMallocMdiag(n, n); // full size A matrix
 	matrix *h_A1 = kuhdaMallocM(x, x);	  // first quarter tile
 
-	// Send the first quarter tile of A to device 0...
-	gpuErrchk(cudaSetDevice(0));
-	double *d_A1 = kuhdaTileToGPU(0, x, 0, x, h_A);
-
 	printf("n = %d\nThe full matrix is:\n", n);
 	kuhdaPrintM(h_A);
 
+	// Send the first quarter tile of A to device 0...
+	gpuErrchk(cudaSetDevice(0));
+	double *d_A1 = kuhdaTileToGPU(0, x, 0, x, h_A);
 	// ...retrieve it again
 	kuhdaTileToHost(x, x, d_A1, h_A1);
-
 	// print retrieved matrix
 	printf("\nFirst tile expected output: %d x %d identity matrix.\n", x, x);
 	kuhdaPrintM(h_A1);
 
+	d_A1 = kuhdaTileToGPU(0, x, x, n, h_A);
+	kuhdaTileToHost(x, x, d_A1, h_A1);
+	printf("\nFirst tile expected output: %d x %d identity matrix.\n", x, x);
+	kuhdaPrintM(h_A1);
+
+	kuhdaFreeM(h_A, 'k');
+	kuhdaFreeM(h_A1, 'k');
+	cudaFree(d_A1);
+	return 0;
 }

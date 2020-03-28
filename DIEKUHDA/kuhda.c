@@ -205,12 +205,14 @@ double *kuhdaTileToGPU(unsigned long rowstart,unsigned long rowstop, unsigned lo
 
 	unsigned long rows = rowstop - rowstart, cols = colstop - colstart;
 	unsigned long i, j;
-	double *memacc = (double*)malloc(cols*sizeof(double));
 
+	double *memacc = (double*)malloc(cols*sizeof(double));
+	if (memacc == NULL){
+		MEM_ERR;
+	}
 	cudaError_t failure;
 	// matrix *d_tile = kuhdaMallocM(rows, cols);
 	double *d_tile = NULL;
-
 
 	// failure = gpuErrchk(cudaMalloc(&d_matrix->data, rows*cols*sizeof(double)));
 	failure = gpuErrchk(cudaMalloc((void**)&d_tile, rows*cols*sizeof(double))); // Tip from HH
@@ -220,13 +222,17 @@ double *kuhdaTileToGPU(unsigned long rowstart,unsigned long rowstop, unsigned lo
 	//	kuhdaFreeM(d_matrix, 'k');
 	} // rows, cols = which tile of rows x cols is taken from the host matrix
 
+	//double* tilep = &d_tile[0];
 	// 'strided' copy
 	for (i=rowstart; i<rowstop; ++i){
 		for (j=colstart; j<colstop; ++j){
-				memacc[j] = h_matrix->data[i * h_matrix->c + j];
+				memacc[j-colstart] = h_matrix->data[i * h_matrix->c + j];
 		}
-		printf("%zu", sizeof(d_tile[0] + (cols * (i-rowstart))));
-		failure = gpuErrchk(cudaMemcpy((void**)d_tile[0] + (cols * (i-rowstart)), memacc, cols*sizeof(double), cudaMemcpyHostToDevice)));
+		//printf("%zu\n", cols * (i-rowstart) );
+		// printf("%zu\n", sizeof( *(tilep + (cols * (i-rowstart))) ) );
+		//failure = gpuErrchk(cudaMemcpy((void*)d_tile + (cols * (i-rowstart)), memacc, cols*sizeof(double), cudaMemcpyHostToDevice));
+		failure = gpuErrchk(cudaMemcpy((void*) (&d_tile[0] + (cols * (i-rowstart))), memacc, cols*sizeof(double), cudaMemcpyHostToDevice));
+
 		if (failure != 0) {
 			FAIL_ERR(failure);
 			cudaFree(d_tile);
@@ -249,7 +255,7 @@ void kuhdaMatrixToHost(unsigned long rows, unsigned long cols, matrix *d_matrix,
 }
 
 void kuhdaTileToHost(unsigned long rows, unsigned long cols, double *d_tile, matrix *h_matrix){
-	if (h_matrix == NULL || d_matrix == NULL) INPUT_NULL_ERR;
+	if (h_matrix == NULL || d_tile == NULL) INPUT_NULL_ERR;
 	if (rows != h_matrix->r) INPUT_ILL_ERR_LU(rows);
 	if (cols != h_matrix->c) INPUT_ILL_ERR_LU(cols);
 
