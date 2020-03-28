@@ -90,7 +90,6 @@ matrix *kuhdaMallocM(unsigned long r, unsigned long c){
 	return out;
 }
 
-
 /* kuhdaMallocM1(unsigned long r, unsigned long c):
 Allocates memory for a matrix of length r*c. The matrix will be filled with ones.
 Remember that DIEKUHDA matrices (type ccMatrix) are 1D arrays!

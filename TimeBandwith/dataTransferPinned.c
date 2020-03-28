@@ -6,7 +6,7 @@
 
 int main(){
 	// Set verbose to 0 to mute output
-	int verbose = 1;
+	int verbose = 0;
 
 	unsigned long n = 8000, size = n * n * sizeof(double);
 	double printmem = size / 1.0e9;
@@ -18,8 +18,19 @@ int main(){
 	gpuErrchk(cudaGetDeviceCount(&devicecount));
 
 	// Containers for host and device matrices
-	matrix *h_A = kuhdaMallocMdiag(n, n), *d_All[devicecount];
+	// matrix *h_A = kuhdaMallocMdiag(n, n), *d_All[devicecount];
 
+	// Now with pinned memory:
+	// matrix *h_A = (matrix *) malloc(sizeof(*h_A)), *d_All[devicecount];
+	matrix *h_A = NULL, *d_All[devicecount];
+	gpuErrchk(cudaMallocHost((void**)&h_A, sizeof(*h_A)));
+	h_A->r = n;
+	h_A->c = n;
+	h_A->data = NULL;
+	//gpuErrchk(cudaMallocHost((void**)&h_A->data, n*n*sizeof(double)));
+	//gpuErrchk(cudaHostAlloc((void**)&h_A->data, n*n*sizeof(double), cudaHostAllocDefault));
+	gpuErrchk(cudaHostAlloc((void**)&h_A->data, n*n*sizeof(double), cudaHostAllocPortable));
+	
 	int i,j;
 	// See if we do get and set the right devices:
 	if (verbose == 1) printf("Allocating memory ..");
@@ -142,11 +153,12 @@ int main(){
 	printf("    X  \n");
 
 	if (verbose == 1) printf("Cleaning up resources ..\n");
-	kuhdaFreeM(h_A, 'k');
+	gpuErrchk(cudaFreeHost(h_A->data));
+	gpuErrchk(cudaFreeHost(h_A));
+
 	for (i = 0; i < devicecount; ++i){
 		kuhdaFreeM(d_All[i], 'c');
 	}
-
 	gpuErrchk(cudaDeviceReset());
 	return 0;
 }
