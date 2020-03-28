@@ -6,9 +6,9 @@
 
 int main(){
 	// Set verbose to 0 to mute output
-	int verbose = 0;
+	int verbose = 1;
 
-	unsigned long n = 5000, size = n * n * sizeof(double);
+	unsigned long n = 8000, size = n * n * sizeof(double);
 	double printmem = size / 1.0e9;
 	printf("Masuring: n = %d\nSending %.4f GB of memory between host and devices\n", n, printmem);
 
@@ -39,10 +39,10 @@ int main(){
 	float milliseconds, results[16], result;
 	int res_ctr = 0;
 	cudaEvent_t start, stop;
-	cudaStream_t *stream;
+	cudaStream_t stream;
 
 	// Now the device - device loop
-	int src, dst, reps = 1, rep, *accessible;
+	int src, dst, reps = 1, rep, accessible;
 	for (src = 0; src < devicecount; ++src){
 		// Set the current device:
 		gpuErrchk(cudaSetDevice(src));
@@ -55,7 +55,7 @@ int main(){
 			// Check if access is set:
 			gpuErrchk(cudaDeviceCanAccessPeer(&accessible, dst, src));
 			if (accessible == 0){
-				if (verbose == 1) printf("Device %d cannot access device %d", dst, src);
+				if (verbose == 1) printf("Device %d cannot access device %d\n", dst, src);
 				continue;
 			}
 			if (verbose == 1) printf("Transfer %d to %d: ", src, dst);
@@ -63,7 +63,7 @@ int main(){
 			// Now continue:
 			// Create the stream for the coming instances: performance is maximized
 			// if stream belongs to the src device. One for each expected transfer.
-			stream = (cudaStream_t *) malloc(sizeof(cudaStream_t));
+			// stream = (cudaStream_t *) malloc(sizeof(cudaStream_t));
 			gpuErrchk(cudaStreamCreate(&stream));
 
 			gpuErrchk(cudaEventCreate(&start));
@@ -75,7 +75,7 @@ int main(){
 				gpuErrchk(cudaMemcpyPeerAsync(d_All[dst]->data, dst, d_All[src]->data, src, size, stream));
 			}
 
-			// gpuErrchk(cudaStreamSynchronize(stream));
+			gpuErrchk(cudaStreamSynchronize(stream));
 		  	gpuErrchk(cudaEventRecord(stop, stream));
 			gpuErrchk(cudaEventSynchronize(stop));
 			gpuErrchk(cudaEventElapsedTime(&milliseconds, start, stop));
@@ -90,8 +90,8 @@ int main(){
 
 		// Now a single memcpy between host and device:
 		if (verbose == 1) printf("Transfer %d to h: ", src);
-		stream = (cudaStream_t *) malloc(sizeof(cudaStream_t));
-		gpuErrchk(cudaStreamCreate(&stream));
+		// stream = (cudaStream_t *) malloc(sizeof(cudaStream_t));
+		//gpuErrchk(cudaStreamCreate(stream));
 
 		gpuErrchk(cudaEventCreate(&start));
 		gpuErrchk(cudaEventCreate(&stop));
@@ -99,10 +99,10 @@ int main(){
 
 		for (rep = 0; rep < reps; ++rep){
 			// inputs: (void *dst, const void *src, size_t count, enum cudaMemcpyKind	kind, cudaStream_t stream)
-			gpuErrchk(cudaMemcpy(h_A->data, d_All[src]->data, size, cudaMemcpyDeviceToHost, stream));
+			gpuErrchk(cudaMemcpyAsync(h_A->data, d_All[src]->data, size, cudaMemcpyDeviceToHost, stream));
 		}
 
-		// gpuErrchk(cudaStreamSynchronize(stream));
+		gpuErrchk(cudaStreamSynchronize(stream));
 		gpuErrchk(cudaEventRecord(stop, stream));
 		gpuErrchk(cudaEventSynchronize(stop));
 		gpuErrchk(cudaEventElapsedTime(&milliseconds, start, stop));
@@ -113,6 +113,7 @@ int main(){
 
 		gpuErrchk(cudaEventDestroy(start));
 		gpuErrchk(cudaEventDestroy(stop));
+		gpuErrchk(cudaStreamDestroy(stream));
 		
 		// Endline:
 		if (verbose == 1) printf("\n");

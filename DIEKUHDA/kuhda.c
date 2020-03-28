@@ -18,7 +18,6 @@ Help: see https://docs.nvidia.com/cuda/cublas/index.html for specific help when 
 #include "cuda.h"
 #include <omp.h>
 
-
 /********************************************/
 /* Allocation/deallocation on the host			*/
 /********************************************/
