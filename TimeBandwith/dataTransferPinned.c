@@ -30,7 +30,7 @@ int main(){
 	//gpuErrchk(cudaMallocHost((void**)&h_A->data, n*n*sizeof(double)));
 	//gpuErrchk(cudaHostAlloc((void**)&h_A->data, n*n*sizeof(double), cudaHostAllocDefault));
 	gpuErrchk(cudaHostAlloc((void**)&h_A->data, n*n*sizeof(double), cudaHostAllocPortable));
-	
+
 	int i,j;
 	// See if we do get and set the right devices:
 	if (verbose == 1) printf("Allocating memory ..");
@@ -125,7 +125,7 @@ int main(){
 		gpuErrchk(cudaEventDestroy(start));
 		gpuErrchk(cudaEventDestroy(stop));
 		gpuErrchk(cudaStreamDestroy(stream));
-		
+
 		// Endline:
 		if (verbose == 1) printf("\n");
 	}

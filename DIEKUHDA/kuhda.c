@@ -198,7 +198,7 @@ matrix *kuhdaMatrixToGPU(unsigned long rows, unsigned long cols, matrix *h_matri
 /* kuhdaTileToGPU(matrix *h_matrix): allocate a matrix on the device and copy contents of host matrix.
 Arguments: rows, cols = which tile of rows x cols is taken from the host matrix
 Return value: NULL if an error occured */
-double *kuhdaTileToGPU(unsigned long rowstart,unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *h_matrix){
+double *kuhdaTileToGPU(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *h_matrix){
 	if (h_matrix == NULL) 	INPUT_NULL_ERR;
 	if (rowstart > rowstop) INPUT_ILL_ERR_LU(rowstop);
 	if (colstart > colstop)	INPUT_ILL_ERR_LU(colstop);
