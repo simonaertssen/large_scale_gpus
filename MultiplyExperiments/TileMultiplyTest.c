@@ -27,7 +27,6 @@ source or destination: get->source, send->destination, host = 4
 */
 
 
-
 int *ReadInstruction(int instruction){
 	// Split and read the instruction:
 	int static instructions[3];
