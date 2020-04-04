@@ -118,6 +118,7 @@ double *kuhdaTileToGPU(unsigned long rowstart,unsigned long rowstop, unsigned lo
 void kuhdaMatrixToHost(unsigned long rows, unsigned long cols, matrix *d_matrix, matrix *h_matrix);
 void kuhdaTileToHost(unsigned long rows, unsigned long cols, double *d_tile, matrix *h_matrix);
 void *TileHostToGPU(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *h_matrix, matrix *d_tile, cudaStream_t stream);
+void *TileGPUToHost(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *d_tile, matrix *h_matrix, cudaStream_t stream);
 
 /* cuda-specific*/
 can *kuhdaMilkCan(int streamnums);

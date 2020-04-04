@@ -249,7 +249,7 @@ Return value: none
 */
 void *TileHostToGPU(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *h_matrix, matrix *d_tile, cudaStream_t stream)
 {
-	if (h_matrix == NULL) 	INPUT_NULL_ERR;
+	if (h_matrix == NULL || d_tile == NULL) 	INPUT_NULL_ERR;
 	if (rowstart > rowstop) INPUT_ILL_ERR_LU(rowstop);
 	if (colstart > colstop)	INPUT_ILL_ERR_LU(colstop);
 	if (stream == NULL) return -1;
@@ -261,6 +261,8 @@ void *TileHostToGPU(unsigned long rowstart, unsigned long rowstop, unsigned long
 	double *memacc = (double*)malloc(cols*sizeof(double));
 	if (memacc == NULL){
 		MEM_ERR;
+		free(memacc);
+		return 0;
 	}
 
 	// 'strided' copy row by row
@@ -271,13 +273,53 @@ void *TileHostToGPU(unsigned long rowstart, unsigned long rowstop, unsigned long
 
 		// Asynchronous copy to device
 		// takes (d_arr, h_arr, nbytes, cudaMemcpyHostToDevice, stream)
-		failure = gpuErrchk(cudaMemcpyAsync(d_tile->data, memacc, size, cudaMemcpyHostToDevice, stream));
+		failure = gpuErrchk(cudaMemcpyAsync((void*) (&d_tile->data[0] + (cols * (i-rowstart))), memacc, size, cudaMemcpyHostToDevice, stream));
 
 		if (failure != 0) {
 			FAIL_ERR(failure);
 			cudaFree(d_tile);
 			}
 	}
+}
+
+/*
+TileHostToGPU: memcopy tile of host matrix to device.
+Arguments: dimensions / location of tile to be copied, pointers to hostmatrix & device-tile, streams
+Return value: none
+*/
+void *TileGPUToHost(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *d_tile, matrix *h_matrix, cudaStream_t stream)
+{
+	if (h_matrix == NULL || d_tile == NULL) 	INPUT_NULL_ERR;
+	if (rowstart > rowstop) INPUT_ILL_ERR_LU(rowstop);
+	if (colstart > colstop)	INPUT_ILL_ERR_LU(colstop);
+	if (stream == NULL) return -1;
+
+	unsigned long rows = rowstop - rowstart, cols = colstop - colstart;
+	unsigned long i, j, size = rows * cols * sizeof(double);
+	cudaError_t failure;
+
+	double *memacc = (double*)malloc(cols*sizeof(double));
+	if (memacc == NULL){
+		MEM_ERR;
+		free(memacc);
+		return 0;
+	}
+
+	// 'strided' copy row by row
+	for (i=rowstart; i<rowstop; ++i){
+		for (j=colstart; j<colstop; ++j){
+				memacc[j-colstart] = h_matrix->data[i * h_matrix->c + j];
+		}
+
+		// Asynchronous copy to device
+		// takes (d_arr, h_arr, nbytes, cudaMemcpyHostToDevice, stream)
+		failure = gpuErrchk(cudaMemcpyAsync((void*) (&d_tile->data[0] + (cols * (i-rowstart))), memacc, size, cudaMemcpyDeviceToHost, stream));
+
+		if (failure != 0) {
+			FAIL_ERR(failure);
+			cudaFree(d_tile);
+	}
+}
 }
 
 

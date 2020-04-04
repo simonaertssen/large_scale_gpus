@@ -6,7 +6,41 @@
 // Run with:
 // nvcc -lcublas ../DIEKUHDA/kuhda.c tileTransferTest1.c && ./a.out
 
+matrix *kuhdaMallocDeviceM(unsigned long r, unsigned long c){
+	if (r <= 0){
+        INPUT_ILL_ERR_LU(r);
+        return NULL;
+    }
+    if (c <= 0){
+        INPUT_ILL_ERR_LU(c);
+        return NULL;
+    }
+
+    matrix *out = NULL;
+    gpuErrchk(cudaMalloc((void**)&out, sizeof(*out)));
+    if (out == NULL) {
+		MEM_ERR;
+		gpuErrchk(cudaFree(out));
+		return NULL;
+	}
+
+	out->r = r;
+	out->c = c;
+    out->data = NULL;
+	gpuErrchk(cudaMalloc((void**)&out->data, r*c*sizeof(double)));
+    if (out->data == NULL) {
+		MEM_ERR;
+		gpuErrchk(cudaFree(out->data));
+	    gpuErrchk(cudaFree(out));
+		return NULL;
+	}
+	return out;
+}
+
+
 int main(){
+
+
 
 	unsigned long n = 8, size = n * n * sizeof(double);
 	int x = n/2, sizex = x * x * sizeof(double); // x * x = dimension of quarter tile
@@ -14,7 +48,7 @@ int main(){
 	// Containers for host and device matrices
 	matrix *h_A = kuhdaMallocMdiag(n, n); // full size A matrix
 	matrix *h_C = kuhdaMallocM(n, n); // empty C matrix
-	// matrix *d_A1 = kuhdaMallocDeviceM(x, x); // <- need this function!
+	matrix *d_A1 = kuhdaMallocDeviceM(x, x);
 
 	cudaStream_t stream;
 	gpuErrchk(cudaStreamCreate(&stream));
