@@ -33,7 +33,7 @@ int main(){
 
 	int i,j;
 	// See if we do get and set the right devices:
-	if (verbose == 1) printf("Allocating memory ..");
+	if (verbose == 1) printf("Allocating memory .. \n");
 	for (i = 0; i < devicecount; ++i){
 		gpuErrchk(cudaSetDevice(i));
 
@@ -48,10 +48,10 @@ int main(){
 
 	// Time connections between devices:
 	float milliseconds, results[16], result;
-	int res_ctr = 0;
+	int res_ctr = 0, stream_counter = 0;
 	cudaEvent_t start, stop;
-	cudaStream_t stream;
-
+	cudaStream_t streams[16];
+	
 	// Now the device - device loop
 	int src, dst, reps = 1, rep, accessible;
 	for (src = 0; src < devicecount; ++src){
@@ -75,19 +75,18 @@ int main(){
 			// Create the stream for the coming instances: performance is maximized
 			// if stream belongs to the src device. One for each expected transfer.
 			// stream = (cudaStream_t *) malloc(sizeof(cudaStream_t));
-			gpuErrchk(cudaStreamCreate(&stream));
-
+			//gpuErrchk(cudaStreamCreate(&stream));
+			gpuErrchk(cudaStreamCreate(&streams[stream_counter]));
 			gpuErrchk(cudaEventCreate(&start));
 			gpuErrchk(cudaEventCreate(&stop));
-			gpuErrchk(cudaEventRecord(start, stream));
-
+			gpuErrchk(cudaEventRecord(start, streams[stream_counter]));
 			for (rep = 0; rep < reps; ++rep){
 				// inputs are: (void* dst, int  dstDevice, const void* src, int  srcDevice, size_t count, cudaStream_t stream = 0)
-				gpuErrchk(cudaMemcpyPeerAsync(d_All[dst]->data, dst, d_All[src]->data, src, size, stream));
+				gpuErrchk(cudaMemcpyPeerAsync(d_All[dst]->data, dst, d_All[src]->data, src, size, streams[stream_counter]));
 			}
 
-			gpuErrchk(cudaStreamSynchronize(stream));
-		  	gpuErrchk(cudaEventRecord(stop, stream));
+			gpuErrchk(cudaStreamSynchronize(streams[stream_counter]));
+		  	gpuErrchk(cudaEventRecord(stop, streams[stream_counter++]));
 			gpuErrchk(cudaEventSynchronize(stop));
 			gpuErrchk(cudaEventElapsedTime(&milliseconds, start, stop));
 
@@ -104,17 +103,17 @@ int main(){
 		// stream = (cudaStream_t *) malloc(sizeof(cudaStream_t));
 		//gpuErrchk(cudaStreamCreate(stream));
 
+		gpuErrchk(cudaStreamCreate(&streams[stream_counter]));
 		gpuErrchk(cudaEventCreate(&start));
 		gpuErrchk(cudaEventCreate(&stop));
-		gpuErrchk(cudaEventRecord(start, stream));
 
+		gpuErrchk(cudaEventRecord(start, streams[stream_counter]));
 		for (rep = 0; rep < reps; ++rep){
 			// inputs: (void *dst, const void *src, size_t count, enum cudaMemcpyKind	kind, cudaStream_t stream)
-			gpuErrchk(cudaMemcpyAsync(h_A->data, d_All[src]->data, size, cudaMemcpyDeviceToHost, stream));
+			gpuErrchk(cudaMemcpyAsync(h_A->data, d_All[src]->data, size, cudaMemcpyDeviceToHost, streams[stream_counter]));
 		}
-
-		gpuErrchk(cudaStreamSynchronize(stream));
-		gpuErrchk(cudaEventRecord(stop, stream));
+		gpuErrchk(cudaStreamSynchronize(streams[stream_counter]));
+		gpuErrchk(cudaEventRecord(stop, streams[stream_counter++]));
 		gpuErrchk(cudaEventSynchronize(stop));
 		gpuErrchk(cudaEventElapsedTime(&milliseconds, start, stop));
 
@@ -124,10 +123,10 @@ int main(){
 
 		gpuErrchk(cudaEventDestroy(start));
 		gpuErrchk(cudaEventDestroy(stop));
-		gpuErrchk(cudaStreamDestroy(stream));
+		//gpuErrchk(cudaStreamDestroy(streams[stream_counter++]));
 
 		// Endline:
-		if (verbose == 1) printf("\n");
+		if (verbose == 1) printf("endline\n");
 	}
 
 	// Print the results:
@@ -153,6 +152,11 @@ int main(){
 	printf("    X  \n");
 
 	if (verbose == 1) printf("Cleaning up resources ..\n");
+
+	for (i = 0; i < 16; ++i){
+		gpuErrchk(cudaStreamDestroy(streams[i]));
+	}
+
 	gpuErrchk(cudaFreeHost(h_A->data));
 	gpuErrchk(cudaFreeHost(h_A));
 

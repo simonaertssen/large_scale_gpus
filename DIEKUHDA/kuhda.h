@@ -61,7 +61,7 @@ Version: 1.0 13/03/2020
 #define DIEKUHDA_DIMENSION_MISMATCH 4
 #define MEM_ERR fprintf(stderr,"%s: failed to allocate memory\n",__func__)
 #define FAIL_ERR(x) fprintf(stderr,"%s: failure detected, error %d\n",__func__, x)
-#define gpuErrchk(ans)  gpuAssert((ans), __FILE__, __LINE__)
+#define gpuErrchk(ans) gpuAssert((ans), __FILE__, __LINE__)
 #define INPUT_NULL_ERR fprintf(stderr,"%s: received NULL pointer as input\n",__func__)
 #define INPUT_ILL_ERR_D(x) fprintf(stderr,"%s: received illegal input %d\n",__func__, x)
 #define INPUT_ILL_ERR_LF(x) fprintf(stderr,"%s: received illegal input %lf\n",__func__, x)
