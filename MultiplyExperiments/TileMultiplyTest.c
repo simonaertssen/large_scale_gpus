@@ -2,62 +2,70 @@
 //#include "../DIEKUHDA/kuhda.h"
 
 // Run with:
-// nvcc -lcublas -lgomp ../DIEKUHDA/kuhda.c dataTransfer.c && ./a.out
+// nvcc -lcublas -lgomp ../DIEKUHDA/kuhda.c TileMultiplyTest.c && ./a.out
 
-// These are commands
+#define print(x) printf("%d\n", x)
+
+// 4 possible COMMANDS:
 #define GET 1
-#define COMPUTE 2
+#define SEND 2
 #define ADD 3
-#define SEND 4
-
+#define COMPUTE 4
+// 3 matrices
 #define A 0
 #define B 1
 #define C 2
+// get -> source, send -> destination: Device numbers 0, 1, 2, 3
+#define H 4 	 // Host = 4
+#define SELF 9 // if command is 'compute' no destination or source is required
 
-#define H 4
-#define NEIN 9
-
-#define instr(x, y, z) 100*x + 10*y + z
-#define print(x) printf("%d\n", x)
+// transform 3 inputs into a unique 3-digit instruction-code (icode)
+#define icode(x, y, z) 100*x + 10*y + z
 /*
-instructions: get comp add send
-A B or C = 0, 1, 2
-source or destination: get->source, send->destination, host = 4
-3 int
+An INSTRUCTION is an array containing 3 integer values:
+1. the command
+2. the matrix to be dealt with by the command
+3. source / destination or SELF
+
+Examples:
+To receive a tile of the A matrix from the host, use
+	icode(GET,A,H);  	// translates to icode(1,0,4) and returns the icode '104'
+
+To compute results of the C matrix, use
+	icode(COMPUTE,C,SELF); 		// returns icode '429'
 */
 
-
-int *ReadInstruction(int instruction){
-	// Split and read the instruction:
-	int static instructions[3];
-	instructions[0] = instruction/100;
-	instructions[1] = (instruction - instructions[0]*100)/10;
-	instructions[2] = instruction - (instructions[0]*100) - instructions[1]*10;
-	printf("The instruction is: %d -> do %d with %d on %d \n", instruction, instructions[0], instructions[1], instructions[2]);
-	return instructions;
+// Read the 3-digit instruction-code (icode) and return an instruction array:
+int *MakeInstruction(int icode){
+	int static instruction[3];
+	instruction[0] = icode/100;
+	instruction[1] = (icode - instruction[0]*100)/10;
+	instruction[2] = icode - (instruction[0]*100) - instruction[1]*10;
+	// printf("The instruction-code is: %d -> do %d with %d on %d \n", icode, instruction[0], instruction[1], instruction[2]);
+	return instruction;
 }
 
-void ExecuteCommand(double* h_A, double* h_B, int device, int instruction){
+void Execute(double* h_A, double* h_B, int device, int icode){
 	// Set the current device:
 	// gpuErrchk(cudaSetDevice(device));
 
-	int *instructions = ReadInstruction(instruction);
+	int *instruction = MakeInstruction(icode);
 
 	// Sort on the different commands: GET1 COMPUTE2 ADD3 SEND4
-	if (instructions[0] == GET){
+	if (instruction[0] == GET){
 		// Sort on devices or host
-		if (instructions[2] == H){
+		if (instruction[2] == H){
 			// kuhdaTileToGPU -> make that work with d_A, d_B and d_C
 		}
 
-	} else if (instructions[1] == COMPUTE){
+	} else if (instruction[1] == COMPUTE){
 
-	} else if (instructions[2] == ADD){
+	} else if (instruction[2] == ADD){
 
-	} else if (instructions[3] == SEND){
+	} else if (instruction[3] == SEND){
 
 	} else {
-		printf("An error occured");
+		printf("An error occured.\n");
 	}
 
 }
@@ -91,15 +99,17 @@ int main(){
 		// gpuErrchk(cudaMalloc((void**)&d_A[i], tilesize));
 		// gpuErrchk(cudaMalloc((void**)&d_B[i], tilesize));
 		// gpuErrchk(cudaMalloc((void**)&d_C[i], tilesize));
-		printf("Malloc tiles on GPU's");
+		printf("Malloc tiles on GPU's.\n");
 	}
 
 
-	// Make the instructions:
-	int instructions0[9] = {instr(GET,A,H), instr(GET,B,H), instr(COMPUTE,C,NEIN), instr(GET,A,2), instr(GET,C,1), instr(ADD,C,H),
-		instr(COMPUTE,C,NEIN), instr(GET,C,1), instr(ADD,C,H)};
+	// Make the instructions
 
-	ExecuteCommand(h_A, h_B, device, instr(SEND,C,NEIN));
+	// Device 0:
+	int instructions0[9] = {icode(GET,A,H), icode(GET,B,H), icode(COMPUTE,C,SELF), icode(GET,A,2), icode(GET,C,1), icode(ADD,C,H),
+		icode(COMPUTE,C,SELF), icode(GET,C,1), icode(ADD,C,H)};
+
+	Execute(h_A, h_B, device, icode(SEND,C,SELF));
 
 	return 0;
 }

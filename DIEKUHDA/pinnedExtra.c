@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include "kuhda.h"
 
-
+/*
 matrix *kuhdaMallocMP(unsigned long r, unsigned long c){
 	if (r <= 0){
         INPUT_ILL_ERR_LU(r);
@@ -11,7 +11,7 @@ matrix *kuhdaMallocMP(unsigned long r, unsigned long c){
         INPUT_ILL_ERR_LU(c);
         return NULL;
     }
-    
+
     matrix *out = NULL;
     gpuErrchk(cudaMallocHost((void**)&out, sizeof(*out)));
     if (out == NULL) {
@@ -33,6 +33,7 @@ matrix *kuhdaMallocMP(unsigned long r, unsigned long c){
 	return out;
 }
 
+
 matrix *kuhdaMallocMdiagP(unsigned long r, unsigned long c){
 	matrix *out = kuhdaMallocMP(r, c);
 	unsigned long i;
@@ -51,7 +52,7 @@ matrix *kuhdaMallocDeviceM(unsigned long r, unsigned long c){
         INPUT_ILL_ERR_LU(c);
         return NULL;
     }
-    
+
     matrix *out = NULL;
     gpuErrchk(cudaMalloc((void**)&out, sizeof(*out)));
     if (out == NULL) {
@@ -72,7 +73,7 @@ matrix *kuhdaMallocDeviceM(unsigned long r, unsigned long c){
 	}
 	return out;
 }
-
+*/
 
 int main(){
     printf("Test");
