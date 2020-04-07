@@ -8,7 +8,7 @@ $$ |  $$ |  $$ |  $$ |      $$ |\$$\  $$ |  $$ |$$ |  $$ |$$ |  $$ |$$ |  $$ |  
 $$$$$$$  |$$$$$$\ $$$$$$$$\ $$ | \$$\ \$$$$$$  |$$ |  $$ |$$$$$$$  |$$ |  $$ |$$\ $$ |  $$ |
 \_______/ \______|\________|\__|  \__| \______/ \__|  \__|\_______/ \__|  \__|\__|\__|  \__|
 
-                          /|                        /|
+                           /|                       /|
                           | \           __ _ _     / ;
                     ___    \ \   _.-"-" `~"\  `"--' /
                 _.-'   ""-._\ ""   ._,"  ; "\"--._./
@@ -33,12 +33,12 @@ $$$$$$$  |$$$$$$\ $$$$$$$$\ $$ | \$$\ \$$$$$$  |$$ |  $$ |$$$$$$$  |$$ |  $$ |$$
                           |_ _\|_ _\
                             "    "
 
-DTU Special course: Large Scale GPU Computin
+DTU Special course: Large Scale GPU Computing
 Authors: Simon Aertssen (s181603) and Louis Hein (s181573)
-Supervisors: Bernd Damman and Hans Henrik Brandenborg Soerensen
+Supervisors: Bernd Dammann and Hans Henrik Brandenborg Soerensen
 
-DIEKUHDA (pronounce "dcuda"):  Basic data structures, allocation/deallocation
-routines, and input/output routines for matrices, to be used in the
+DIEKUHDA (pronounce "d-cuda"):  Basic data structures, allocation/deallocation
+routines, and input/output routines for matrices, to be used in the project
 
 Version: 1.0 13/03/2020
 */
@@ -48,7 +48,7 @@ Version: 1.0 13/03/2020
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <cuda_runtime_api.h> // Tip from HH
+#include <cuda_runtime_api.h>
 #include "cublas_v2.h"
 
 
@@ -89,7 +89,7 @@ typedef struct matrix {
 
 typedef struct can {
   cublasHandle_t handle;   /* pointer type to an opaque structure holding the cuBLAS library context */
-  cudaStream_t *streams;    /* streamIds */
+  cudaStream_t *streams;   /* stream IDs */
 } can;
 
 
@@ -101,8 +101,10 @@ typedef struct can {
 |_|     \____/|_| \_|\_____|  |_|  |_____\____/|_| \_|_____/
 */
 /* Allocation/deallocation on the host*/
+// vectors
 vector *kuhdaMallocV(unsigned long r);
 void kuhdaFreeV(vector *freethisvector);
+// matrices
 matrix *kuhdaMallocM(unsigned long r, unsigned long c);
 matrix *kuhdaMallocM1(unsigned long r, unsigned long c);
 matrix *kuhdaMallocMdiag(unsigned long r, unsigned long c);
@@ -119,8 +121,12 @@ void kuhdaMatrixToHost(unsigned long rows, unsigned long cols, matrix *d_matrix,
 void kuhdaTileToHost(unsigned long rows, unsigned long cols, double *d_tile, matrix *h_matrix);
 void *TileHostToGPU(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *h_matrix, matrix *d_tile, cudaStream_t stream);
 void *TileGPUToHost(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *d_tile, matrix *h_matrix, cudaStream_t stream);
+// Pinned allocation routines:
+matrix *kuhdaMallocMP(unsigned long r, unsigned long c);
+matrix *kuhdaMallocMdiagP(unsigned long r, unsigned long c);
+matrix *kuhdaMallocDeviceM(unsigned long r, unsigned long c);
 
-/* cuda-specific*/
+/* CUDA-specific */
 can *kuhdaMilkCan(int streamnums);
 cudaError_t gpuAssert(cudaError_t code, const char *file, int line);
 
