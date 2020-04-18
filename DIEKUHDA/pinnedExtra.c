@@ -1,6 +1,9 @@
 #include <stdio.h>
 #include "kuhda.h"
 
+// run with
+// nvcc -lcublas -lgomp kuhda.c pinnedExtra.c && ./a.out
+
 /*
 matrix *kuhdaMallocMP(unsigned long r, unsigned long c){
 	if (r <= 0){
@@ -76,7 +79,7 @@ matrix *kuhdaMallocDeviceM(unsigned long r, unsigned long c){
 */
 
 int main(){
-    printf("Test");
+    printf("Test\n");
     unsigned long n = 10;
     matrix *test = kuhdaMallocMdiagP(n,n);
     kuhdaPrintM(test);

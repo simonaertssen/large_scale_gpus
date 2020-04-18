@@ -29,7 +29,7 @@ int main(){
 
 	d_A1 = kuhdaTileToGPU(0, x, x, n, h_A);
 	kuhdaTileToHost(x, x, d_A1, h_A1);
-	printf("\nFirst tile expected output: %d x %d identity matrix.\n", x, x);
+	printf("\nFirst tile expected output: %d x %d zero matrix.\n", x, x);
 	kuhdaPrintM(h_A1);
 
 	kuhdaFreeM(h_A, 'k');

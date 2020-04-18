@@ -244,7 +244,7 @@ matrix *kuhdaMallocMdiagP(unsigned long r, unsigned long c){
 
 
 /********************************************/
-/* 						 Data transfers 							*/
+/* 				 Data transfers 			*/
 /********************************************/
 
 /*
@@ -261,10 +261,11 @@ void *TileHostToGPU(unsigned long rowstart, unsigned long rowstop, unsigned long
 	if (stream == NULL) INPUT_NULL_ERR;
 
 	unsigned long rows = rowstop - rowstart,     cols = colstop - colstart;
-	printf("->r = %d, rows = %d", d_tile->r, rows);
+	// printf("->r = %d, rows = %d", d_tile->r, rows);
 	unsigned long size = rows * cols * sizeof(double),    i, j;
 	cudaError_t failure;
 
+	// allocate space (size of a single tile row) on the host:
 	double *memacc = (double*)malloc(cols*sizeof(double));
 	if (memacc == NULL){
 		MEM_ERR;
@@ -272,26 +273,31 @@ void *TileHostToGPU(unsigned long rowstart, unsigned long rowstop, unsigned long
 		return 0;
 	}
 
-	// 'strided' copy row by row
+	// 'strided' copy, row by row
 	for (i=rowstart; i<rowstop; ++i){
 		for (j=colstart; j<colstop; ++j){
-				memacc[j-colstart] = h_matrix->data[i * h_matrix->c + j];
+			// fill memacc with host-matrix data one (tile-)row at a time:
+			memacc[j-colstart] = h_matrix->data[i * h_matrix->c + j];
 		}
+		// printf("\nmemacc[0] = %d\n", memacc[0]);
+		// printf("i, j = %d, %d\n", i, j);
 
 		// Asynchronous copy to device
 		// takes (d_arr, h_arr, nbytes, cudaMemcpyHostToDevice, stream)
-		failure = gpuErrchk(cudaMemcpyAsync((void*) (&d_tile->data[0] + (cols * (i-rowstart))), memacc, size, cudaMemcpyHostToDevice, stream));
+		failure = gpuErrchk(cudaMemcpyAsync((void*) (&d_tile->data[0] + (cols * (i-rowstart))), memacc, cols*sizeof(double), cudaMemcpyHostToDevice, stream));
 
 		if (failure != 0) {
 			FAIL_ERR(failure);
 			cudaFree(d_tile);
 			}
+		// printf("int failure = %d\n", failure);
 	}
+	// printf("Tile copy succeeded.\n");
 }
 
 
 /*
-TileHostToGPU: memcopy tile of host matrix to device.
+TileGPUToHost: memcopy tile of device matrix to host.
 Arguments: dimensions / location of tile to be copied, pointers to hostmatrix & device-tile, streams
 Return value: none
 */
@@ -300,7 +306,8 @@ void *TileGPUToHost(unsigned long rowstart, unsigned long rowstop, unsigned long
 	if (h_matrix == NULL || d_tile == NULL) 	INPUT_NULL_ERR;
 	if (rowstart > rowstop) INPUT_ILL_ERR_LU(rowstop);
 	if (colstart > colstop)	INPUT_ILL_ERR_LU(colstop);
-	if (stream == NULL) return INPUT_NULL_ERR;
+	if (stream == NULL) INPUT_NULL_ERR;
+
 
 	unsigned long rows = rowstop - rowstart, cols = colstop - colstart;
 	unsigned long i, j, size = rows * cols * sizeof(double);
@@ -313,21 +320,25 @@ void *TileGPUToHost(unsigned long rowstart, unsigned long rowstop, unsigned long
 		return 0;
 	}
 
-	// 'strided' copy row by row
+	// 'strided' copy, row by row
 	for (i=rowstart; i<rowstop; ++i){
+		failure = gpuErrchk(cudaMemcpyAsync(memacc, (void*) (&d_tile->data[0] + (cols * (i-rowstart))), cols*sizeof(double), cudaMemcpyDeviceToHost, stream));
 		for (j=colstart; j<colstop; ++j){
-				memacc[j-colstart] = h_matrix->data[i * h_matrix->c + j];
+			h_matrix->data[i * h_matrix->c + j] = memacc[j-colstart];
+			//memacc[j-colstart] = h_matrix->data[i * h_matrix->c + j];
 		}
 
-		// Asynchronous copy to device
+		// Asynchronous copy to host
 		// takes (d_arr, h_arr, nbytes, cudaMemcpyHostToDevice, stream)
-		failure = gpuErrchk(cudaMemcpyAsync((void*) (&d_tile->data[0] + (cols * (i-rowstart))), memacc, size, cudaMemcpyDeviceToHost, stream));
+		//failure = gpuErrchk(cudaMemcpyAsync((void*) (&d_tile->data[0] + (cols * (i-rowstart))), memacc, cols*sizeof(double), cudaMemcpyDeviceToHost, stream));
+		// failure = gpuErrchk(cudaMemcpyAsync(memacc, (void*) (&h_matrix->data[0] + (cols * (i-rowstart))), cols*sizeof(double), cudaMemcpyDeviceToHost, stream));
 
 		if (failure != 0) {
 			FAIL_ERR(failure);
 			cudaFree(d_tile);
 		}
 	}
+	// printf("Tile copied successfully.\n");
 }
 
 
@@ -359,7 +370,7 @@ void kuhdaTileToHost(unsigned long rows, unsigned long cols, double *d_tile, mat
 
 
 /********************************************/
-/* 							cuda-specific					   		*/
+/* 				cuda-specific		  		*/
 /********************************************/
 
 /* kuhdaMilkCan(int streamnums):
@@ -413,7 +424,7 @@ cudaError_t gpuAssert(cudaError_t code, const char *file, int line){
 
 
 /********************************************/
-/* 					Necessary computations					*/
+/* 			Necessary computations			*/
 /********************************************/
 
 /* kuhdaTimeDGEMM(unsigned long m, unsigned long n, unsigned long k): compute the number of

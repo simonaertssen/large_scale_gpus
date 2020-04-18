@@ -1,5 +1,5 @@
 #include <stdio.h>
-//#include "../DIEKUHDA/kuhda.h"
+#include "../DIEKUHDA/kuhda.h"
 
 // Run with:
 // nvcc -lcublas -lgomp ../DIEKUHDA/kuhda.c TileMultiplyTest.c && ./a.out
@@ -45,7 +45,7 @@ int *MakeInstruction(int icode){
 	return instruction;
 }
 
-void Execute(double* h_A, double* h_B, int device, int icode){
+void Execute(matrix* h_A, matrix* h_B, matrix* h_C, matrix* d_A, matrix* d_B, matrix* d_C, int device, int icode){
 	// Set the current device:
 	// gpuErrchk(cudaSetDevice(device));
 
@@ -82,25 +82,24 @@ int main(){
 	unsigned long t = n/2, tilesize = t*t*sizeof(double);
 	// Make a giant matrix A and B on the host here:
 	// Make these two into a pinned version
-	// matrix *h_A = kuhdaMallocMdiag(n, n);
-	// matrix *h_B = kuhdaMallocMdiag(n, n);
+	matrix *h_A = kuhdaMallocMdiagP(n, n);
+	matrix *h_B = kuhdaMallocMdiagP(n, n);
+	matrix *h_C = kuhdaMallocMdiagP(n, n);
 
-	double *h_A = NULL;
-	double *h_B = NULL;
-
-	double *d_A[devicecount];
-	double *d_B[devicecount];
-	double *d_C[devicecount];
+	matrix *d_A[devicecount];
+	matrix *d_B[devicecount];
+	matrix *d_C[devicecount];
 
 
 	int i;
 	for (i = 0; i < devicecount; ++i){
 		// gpuErrchk(cudaSetDevice(i));
-		// gpuErrchk(cudaMalloc((void**)&d_A[i], tilesize));
-		// gpuErrchk(cudaMalloc((void**)&d_B[i], tilesize));
-		// gpuErrchk(cudaMalloc((void**)&d_C[i], tilesize));
-		printf("Malloc tiles on GPU's.\n");
+		d_A[i] = kuhdaMallocDeviceM(t, t);
+		d_B[i] = kuhdaMallocDeviceM(t, t);
+		d_C[i] = kuhdaMallocDeviceM(t, t);
+		
 	}
+	printf("Malloc tiles on GPU's.\n");
 
 
 	// Make the instructions
@@ -109,7 +108,22 @@ int main(){
 	int instructions0[9] = {icode(GET,A,H), icode(GET,B,H), icode(COMPUTE,C,SELF), icode(GET,A,2), icode(GET,C,1), icode(ADD,C,H),
 		icode(COMPUTE,C,SELF), icode(GET,C,1), icode(ADD,C,H)};
 
-	Execute(h_A, h_B, device, icode(SEND,C,SELF));
+	// Execute(h_A, h_B, device, icode(SEND,C,SELF));
 
+
+	// Cleanup
+	gpuErrchk(cudaFreeHost(h_A->data));
+	gpuErrchk(cudaFreeHost(h_A));
+	gpuErrchk(cudaFreeHost(h_B->data));
+	gpuErrchk(cudaFreeHost(h_B));
+	gpuErrchk(cudaFreeHost(h_C->data));
+	gpuErrchk(cudaFreeHost(h_C));
+
+	for (i = 0; i < devicecount; ++i){
+		kuhdaFreeM(d_A[i], 'c');
+		kuhdaFreeM(d_B[i], 'c');
+		kuhdaFreeM(d_C[i], 'c');
+	}
+	printf("Cleaned up resources.\n");
 	return 0;
 }
