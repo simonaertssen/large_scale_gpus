@@ -110,9 +110,17 @@ matrix *kuhdaMallocM1(unsigned long r, unsigned long c);
 matrix *kuhdaMallocMdiag(unsigned long r, unsigned long c);
 void kuhdaFreeM(matrix *freethismatrix, char type);
 
+// Pinned allocation routines:
+matrix *kuhdaMallocMP(unsigned long r, unsigned long c);
+matrix *kuhdaMallocMP1(unsigned long r, unsigned long c);
+matrix *kuhdaMallocMdiagP(unsigned long r, unsigned long c);
+matrix *kuhdaMallocDeviceM(unsigned long r, unsigned long c);
+
 /* Printing */
 void kuhdaPrintV(vector *freethisvector);
 void kuhdaPrintM(matrix *printhismatrix);
+void kuhdaTestM(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *testhismatrix);
+
 
 /* Allocation/deallocation on the device(s)*/
 matrix *kuhdaMatrixToGPU(unsigned long rows, unsigned long cols, matrix *h_matrix);
@@ -121,16 +129,15 @@ void kuhdaMatrixToHost(unsigned long rows, unsigned long cols, matrix *d_matrix,
 void kuhdaTileToHost(unsigned long rows, unsigned long cols, double *d_tile, matrix *h_matrix);
 void *TileHostToGPU(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *h_matrix, matrix *d_tile, cudaStream_t stream);
 void *TileGPUToHost(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *d_tile, matrix *h_matrix, cudaStream_t stream);
-// Pinned allocation routines:
-matrix *kuhdaMallocMP(unsigned long r, unsigned long c);
-matrix *kuhdaMallocMdiagP(unsigned long r, unsigned long c);
-matrix *kuhdaMallocDeviceM(unsigned long r, unsigned long c);
+void *TileGPUAddToHost(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *d_tile, matrix *h_matrix, cudaStream_t stream);
+
 
 /* CUDA-specific */
 can *kuhdaMilkCan(int streamnums);
 cudaError_t gpuAssert(cudaError_t code, const char *file, int line);
 
 /* Necessary computations*/
+int kuhdamm(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, cudaStream_t stream, int verbose);
 long long kuhdaTimeDGEMM(matrix *d_matrix, int reps, int verbose);
 
 #endif

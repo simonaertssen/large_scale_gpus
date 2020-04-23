@@ -126,8 +126,24 @@ Arguments: freethismatrix = pointer to matrix to be freed, type = cuda or kuhda
 Return value: NULL if an error occured */
 void kuhdaFreeM(matrix *freethismatrix, char type){
 	if (freethismatrix == NULL) INPUT_NULL_ERR;
-	type == 'c' ? gpuErrchk(cudaFree(freethismatrix->data)) : free(freethismatrix->data);
-	if (freethismatrix != NULL) free(freethismatrix);
+
+	switch(type) {
+
+   	case 'c': // a kuhda matrix with data member on a device
+      	gpuErrchk(cudaFree(freethismatrix->data));
+		free(freethismatrix);
+      	break;
+
+	case 'p': // a kuhda matrix with data member pinned on the host
+    	gpuErrchk(cudaFreeHost(freethismatrix->data));
+		gpuErrchk(cudaFreeHost(freethismatrix));
+      	break; 
+	
+   	case 'k': // a kuhda matrix with data member on the host
+   		free(freethismatrix->data);
+   		free(freethismatrix);
+		break; 
+	}
 }
 
 
@@ -159,9 +175,33 @@ void kuhdaPrintM(matrix *printthismatrix){
 		}
 		printf("|\n");
 	}
-
 }
 
+// Test whether all elements of this matrix are equal to its' dimensions.
+// Only for the result of multiplication on square ones!
+void kuhdaTestM(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *testhismatrix){
+	if (testhismatrix == NULL){
+		INPUT_NULL_ERR;
+	}
+	if (rowstart - rowstop != colstart - colstop){
+		printf("The testfunction is only deigned for square tiles.");
+		return;
+	}
+
+	unsigned long i,j,value = 0,as_we_would_expect = (int)(rowstop - rowstart);
+	for (i=rowstart; i<rowstop; ++i){
+		for (j=colstart; j<colstop; ++j){
+			value = (int)testhismatrix->data[i*testhismatrix->c + j];
+			if (value != as_we_would_expect){
+				printf("The matrix does not contain the expected results at ");
+				printf("(%d, %d) = %d != %d\n", i,j, value, as_we_would_expect);
+				FAIL_ERR(value);
+				return;
+			}
+		}
+	}
+	printf("Test succeeded. No errors.\n");
+}
 
 /********************************************/
 /* Allocation/deallocation on the DEVICE(S) */
@@ -231,6 +271,17 @@ matrix *kuhdaMallocMP(unsigned long r, unsigned long c){
 	return out;
 }
 
+/* PINNED allocation for [r * c] matrix of onesss */
+matrix *kuhdaMallocMP1(unsigned long r, unsigned long c){
+	matrix *out = kuhdaMallocMP(r, c);
+	unsigned long i, j;
+	for (i = 0; i < r; ++i){
+		for (j = 0; j < c; ++j){
+			*(out->data + i*c + j) = 1.0;
+		}
+	}
+	return out;
+}
 
 /* PINNED allocation for [r * c] identity matrix */
 matrix *kuhdaMallocMdiagP(unsigned long r, unsigned long c){
@@ -322,16 +373,12 @@ void *TileGPUToHost(unsigned long rowstart, unsigned long rowstop, unsigned long
 
 	// 'strided' copy, row by row
 	for (i=rowstart; i<rowstop; ++i){
+		// takes (d_arr, h_arr, nbytes, cudaMemcpyHostToDevice, stream)
 		failure = gpuErrchk(cudaMemcpyAsync(memacc, (void*) (&d_tile->data[0] + (cols * (i-rowstart))), cols*sizeof(double), cudaMemcpyDeviceToHost, stream));
 		for (j=colstart; j<colstop; ++j){
 			h_matrix->data[i * h_matrix->c + j] = memacc[j-colstart];
 			//memacc[j-colstart] = h_matrix->data[i * h_matrix->c + j];
 		}
-
-		// Asynchronous copy to host
-		// takes (d_arr, h_arr, nbytes, cudaMemcpyHostToDevice, stream)
-		//failure = gpuErrchk(cudaMemcpyAsync((void*) (&d_tile->data[0] + (cols * (i-rowstart))), memacc, cols*sizeof(double), cudaMemcpyDeviceToHost, stream));
-		// failure = gpuErrchk(cudaMemcpyAsync(memacc, (void*) (&h_matrix->data[0] + (cols * (i-rowstart))), cols*sizeof(double), cudaMemcpyDeviceToHost, stream));
 
 		if (failure != 0) {
 			FAIL_ERR(failure);
@@ -340,6 +387,48 @@ void *TileGPUToHost(unsigned long rowstart, unsigned long rowstop, unsigned long
 	}
 	// printf("Tile copied successfully.\n");
 }
+
+/*
+TileGPUAddToHost: memcopy tile of device matrix to host.
+Arguments: dimensions / location of tile to be copied, pointers to hostmatrix & device-tile, streams
+Return value: none
+*/
+void *TileGPUAddToHost(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *d_tile, matrix *h_matrix, cudaStream_t stream)
+{
+	if (h_matrix == NULL || d_tile == NULL) 	INPUT_NULL_ERR;
+	if (rowstart > rowstop) INPUT_ILL_ERR_LU(rowstop);
+	if (colstart > colstop)	INPUT_ILL_ERR_LU(colstop);
+	if (stream == NULL) INPUT_NULL_ERR;
+
+
+	unsigned long rows = rowstop - rowstart, cols = colstop - colstart;
+	unsigned long i, j, size = rows * cols * sizeof(double);
+	cudaError_t failure;
+
+	double *memacc = (double*)malloc(cols*sizeof(double));
+	if (memacc == NULL){
+		MEM_ERR;
+		free(memacc);
+		return 0;
+	}
+
+	// 'strided' copy, row by row
+	for (i=rowstart; i<rowstop; ++i){
+		// takes (d_arr, h_arr, nbytes, cudaMemcpyHostToDevice, stream)
+		failure = gpuErrchk(cudaMemcpyAsync(memacc, (void*) (&d_tile->data[0] + (cols * (i-rowstart))), cols*sizeof(double), cudaMemcpyDeviceToHost, stream));
+		for (j=colstart; j<colstop; ++j){
+			h_matrix->data[i * h_matrix->c + j] += memacc[j-colstart];
+			//memacc[j-colstart] = h_matrix->data[i * h_matrix->c + j];
+		}
+
+		if (failure != 0) {
+			FAIL_ERR(failure);
+			cudaFree(d_tile);
+		}
+	}
+	// printf("Tile copied successfully.\n");
+}
+
 
 
 void kuhdaMatrixToHost(unsigned long rows, unsigned long cols, matrix *d_matrix, matrix *h_matrix){
@@ -496,6 +585,85 @@ long long kuhdaTimeDGEMM(matrix *d_matrix, int reps, int verbose){
 	gpuErrchk(cudaEventDestroy(stop));
 	return gflops;
 }
+
+/* kuhdamm(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, int verbose): 
+perform matrix-matrix multiplication of tiles on a device, performed by cublasDgemm.
+C <- alpha * AB + beta*C	 with	 [A] = m x k, [B] = k x n, [C] = m x n
+
+Arguments: m, n, k = formal dimensions of the matrices A, B and C,
+verbose = whether we want to print the output on the console 
+('0' = nothing prints, '1' = results will be printed)
+
+Return value: the number of GigaFlops (GFLOPS), or NULL if an error occured */
+int kuhdamm(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, cudaStream_t stream, int verbose){
+	if (d_A_tile == NULL || d_B_tile == NULL || d_C_tile == NULL){
+		INPUT_NULL_ERR;
+		return -1;
+	} 
+	if (d_A_tile->r != d_C_tile->r || d_A_tile->c != d_B_tile->r || d_B_tile->c != d_C_tile->c){
+		INPUT_ILL_ERR_D(d_A_tile->r);
+		return DIEKUHDA_DIMENSION_MISMATCH;
+	} 
+	if (stream == NULL) INPUT_NULL_ERR;
+	
+	// Data for the computations:
+	unsigned int m = d_A_tile->r, k = d_A_tile->c, n = d_C_tile->c;
+	double alpha = 1.0, beta  = 0.0;
+	cublasHandle_t handle;
+	int failure = cublasCreate(&handle);
+	if (failure != 0){
+		FAIL_ERR(failure);
+		return -1;
+	}
+	/*cudaStream_t stream = (cudaStream_t) malloc(sizeof(cudaStream_t));
+  	gpuErrchk(cudaStreamCreate(&stream));
+	failure = cublasSetStream(handle, stream);
+	if (failure != 0){
+		FAIL_ERR(failure);
+		return -1;
+	}*/
+
+	// Events for the dgemm timing:
+	/*
+	cudaEvent_t start, stop;
+	gpuErrchk(cudaEventCreate(&start));
+	gpuErrchk(cudaEventCreate(&stop));
+	gpuErrchk(cudaEventRecord(start, 0));
+	*/
+// What does this do again???
+	//gpuErrchk(cudaStreamSynchronize(0));
+	failure = cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, &alpha,
+			d_A_tile->data, m, d_B_tile->data, k, &beta, d_C_tile->data, m);
+	if (failure != 0){
+		FAIL_ERR(failure);
+		return -1;
+	}
+	/*
+	gpuErrchk(cudaStreamSynchronize(0));
+    //gpuErrchk(cudaDeviceSynchronize()); // Not necessary when using cudaEvents
+    gpuErrchk(cudaEventRecord(stop, 0));
+	gpuErrchk(cudaEventSynchronize(stop));
+
+	float milliseconds = 0;
+	gpuErrchk(cudaEventElapsedTime(&milliseconds, start, stop));
+
+	// Number of computations was found here:
+	// https://devtalk.nvidia.com/default/topic/482834/how-to-compute-gflops-for-gemm-blas/
+	long int numerator    = (long int)(m * n) * (2 * ((long long)k) + 2) * reps;
+	long long denominator = 1.0e6 * milliseconds;
+	long long gflops = numerator / denominator;
+	if (verbose !=0){
+		printf("%lu GFLPS\n", gflops);
+	}
+	// Clean up:
+	gpuErrchk(cudaEventDestroy(start));
+	gpuErrchk(cudaEventDestroy(stop));
+	return gflops;
+	*/
+	cublasDestroy(handle);
+}
+
+
 
 
 //////////////////////////////////////////////////////////////////
