@@ -59,7 +59,7 @@ void Execute(matrix* h_A, matrix* h_B, matrix* h_C, matrix* d_A, matrix* d_B, ma
 		}
 
 	} else if (instruction[1] == COMPUTE){
-
+		
 	} else if (instruction[2] == ADD){
 
 	} else if (instruction[3] == SEND){
