@@ -188,7 +188,7 @@ void kuhdaTestM(unsigned long rowstart, unsigned long rowstop, unsigned long col
 		return;
 	}
 
-	unsigned long i,j,value = 0,as_we_would_expect = (int)(rowstop - rowstart);
+	unsigned long i,j,value = 0,as_we_would_expect = (int)(rowstop - rowstart)*2;
 	for (i=rowstart; i<rowstop; ++i){
 		for (j=colstart; j<colstop; ++j){
 			value = (int)testhismatrix->data[i*testhismatrix->c + j];
@@ -618,25 +618,18 @@ int kuhdamm(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, cudaStream_t s
 		return -1;
 	}
 
-	cudaStream_t newstream = (cudaStream_t) malloc(sizeof(cudaStream_t));
-  	gpuErrchk(cudaStreamCreate(&newstream));
-	failure = cublasSetStream(handle, newstream);
+	failure = cublasSetStream(handle, stream);
 	if (failure != 0){
 		FAIL_ERR(failure);
 		return -1;
 	}
-	
-	// What does this do again???
-	//gpuErrchk(cudaStreamSynchronize(0));
 	failure = cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, &alpha,
 			d_A_tile->data, m, d_B_tile->data, k, &beta, d_C_tile->data, m);
 	if (failure != 0){
 		FAIL_ERR(failure);
 		return -1;
 	}
-	//gpuErrchk(cudaStreamSynchronize(0));
 	gpuErrchk(cublasDestroy(handle));
-	gpuErrchk(cudaStreamDestroy(newstream));
 }
 
 
