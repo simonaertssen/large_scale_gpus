@@ -75,7 +75,7 @@ int main()
 
 	    //gpuErrchk(cudaStreamSynchronize(d_streams[device]));
         gpuErrchk(cudaEventRecord(stop[device], d_streams[device]));
-	    gpuErrchk(cudaEventSynchronize(stop[device]));
+	    //gpuErrchk(cudaEventSynchronize(stop[device]));
 
 	    gpuErrchk(cudaEventElapsedTime(&ms_timer[device], start[device], stop[device]));
 	    printf("Multiplication on device %d took %lf seconds\n", device, ms_timer[device]/1000);
