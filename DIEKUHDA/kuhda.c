@@ -540,7 +540,7 @@ long long kuhdaTimeDGEMM(matrix *d_matrix, int reps, int verbose){
 		return -1;
 	}
 	cudaStream_t stream = (cudaStream_t) malloc(sizeof(cudaStream_t));
-  gpuErrchk(cudaStreamCreate(&stream));
+  	gpuErrchk(cudaStreamCreate(&stream));
 	failure = cublasSetStream(handle, stream);
 	if (failure != 0){
 		FAIL_ERR(failure);
@@ -586,6 +586,8 @@ long long kuhdaTimeDGEMM(matrix *d_matrix, int reps, int verbose){
 	return gflops;
 }
 
+
+
 /* kuhdamm(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, int verbose): 
 perform matrix-matrix multiplication of tiles on a device, performed by cublasDgemm.
 C <- alpha * AB + beta*C	 with	 [A] = m x k, [B] = k x n, [C] = m x n
@@ -615,22 +617,16 @@ int kuhdamm(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, cudaStream_t s
 		FAIL_ERR(failure);
 		return -1;
 	}
-	/*cudaStream_t stream = (cudaStream_t) malloc(sizeof(cudaStream_t));
-  	gpuErrchk(cudaStreamCreate(&stream));
-	failure = cublasSetStream(handle, stream);
+
+	cudaStream_t newstream = (cudaStream_t) malloc(sizeof(cudaStream_t));
+  	gpuErrchk(cudaStreamCreate(&newstream));
+	failure = cublasSetStream(handle, newstream);
 	if (failure != 0){
 		FAIL_ERR(failure);
 		return -1;
-	}*/
-
-	// Events for the dgemm timing:
-	/*
-	cudaEvent_t start, stop;
-	gpuErrchk(cudaEventCreate(&start));
-	gpuErrchk(cudaEventCreate(&stop));
-	gpuErrchk(cudaEventRecord(start, 0));
-	*/
-// What does this do again???
+	}
+	
+	// What does this do again???
 	//gpuErrchk(cudaStreamSynchronize(0));
 	failure = cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, &alpha,
 			d_A_tile->data, m, d_B_tile->data, k, &beta, d_C_tile->data, m);
@@ -638,29 +634,9 @@ int kuhdamm(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, cudaStream_t s
 		FAIL_ERR(failure);
 		return -1;
 	}
-	/*
-	gpuErrchk(cudaStreamSynchronize(0));
-    //gpuErrchk(cudaDeviceSynchronize()); // Not necessary when using cudaEvents
-    gpuErrchk(cudaEventRecord(stop, 0));
-	gpuErrchk(cudaEventSynchronize(stop));
-
-	float milliseconds = 0;
-	gpuErrchk(cudaEventElapsedTime(&milliseconds, start, stop));
-
-	// Number of computations was found here:
-	// https://devtalk.nvidia.com/default/topic/482834/how-to-compute-gflops-for-gemm-blas/
-	long int numerator    = (long int)(m * n) * (2 * ((long long)k) + 2) * reps;
-	long long denominator = 1.0e6 * milliseconds;
-	long long gflops = numerator / denominator;
-	if (verbose !=0){
-		printf("%lu GFLPS\n", gflops);
-	}
-	// Clean up:
-	gpuErrchk(cudaEventDestroy(start));
-	gpuErrchk(cudaEventDestroy(stop));
-	return gflops;
-	*/
-	cublasDestroy(handle);
+	//gpuErrchk(cudaStreamSynchronize(0));
+	gpuErrchk(cublasDestroy(handle));
+	gpuErrchk(cudaStreamDestroy(newstream));
 }
 
 

@@ -16,7 +16,7 @@
 
 int main()
 {   
-    omp_set_num_threads(1);
+    omp_set_num_threads(2);
 	unsigned long n = 10000, size = n * n * sizeof(double);
 	int x = n/2, sizex = x * x * sizeof(double); // x * x = dimension of quarter tile
 
@@ -47,7 +47,7 @@ int main()
     float ms_timer[4] = {0.0, 0.0, 0.0, 0.0}, mainstreamtimer;
     #pragma omp parallel for
     for (device = 2; device < devicecount; device++){
-        printf("Number of threads = %d\n", omp_get_num_threads());
+        //printf("Number of threads = %d\n", omp_get_num_threads());
         gpuErrchk(cudaSetDevice(device));
         printf("Allocating tiles A, B and C on device %d\n", device);
 
@@ -75,7 +75,7 @@ int main()
 
 	    //gpuErrchk(cudaStreamSynchronize(d_streams[device]));
         gpuErrchk(cudaEventRecord(stop[device], d_streams[device]));
-	    // gpuErrchk(cudaEventSynchronize(stop[device]));
+	    gpuErrchk(cudaEventSynchronize(stop[device]));
 
 	    gpuErrchk(cudaEventElapsedTime(&ms_timer[device], start[device], stop[device]));
 	    printf("Multiplication on device %d took %lf seconds\n", device, ms_timer[device]/1000);
@@ -117,8 +117,9 @@ int main()
         for (abc = 0; abc < ABC; ++abc){
             kuhdaFreeM(d_All[device][abc], 'c');
         }
+
+        gpuErrchk(cudaDeviceReset());
     }
 
-	gpuErrchk(cudaDeviceReset());
 	return 0;
 }
