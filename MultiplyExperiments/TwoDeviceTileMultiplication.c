@@ -5,7 +5,7 @@
 #include "omp.h"
 
 // Run with:
-// nvcc -lcublas ../DIEKUHDA/kuhda.c TwoDeviceTileMultiplication.c && ./a.out
+// nvcc -lgomp -lcublas ../DIEKUHDA/kuhda.c TwoDeviceTileMultiplication.c && ./a.out
 
 // What do we want to test: (in parallel)
 // Send d_A1 and d_B1 to device 3 and d_A2 and d_B3 to device 2
@@ -16,7 +16,7 @@
 
 int main()
 {   
-    omp_set_num_threads(2);
+    omp_set_num_threads(1);
 	unsigned long n = 10000, size = n * n * sizeof(double);
 	int x = n/2, sizex = x * x * sizeof(double); // x * x = dimension of quarter tile
 
@@ -75,7 +75,7 @@ int main()
 
 	    //gpuErrchk(cudaStreamSynchronize(d_streams[device]));
         gpuErrchk(cudaEventRecord(stop[device], d_streams[device]));
-	    gpuErrchk(cudaEventSynchronize(stop[device]));
+	    // gpuErrchk(cudaEventSynchronize(stop[device]));
 
 	    gpuErrchk(cudaEventElapsedTime(&ms_timer[device], start[device], stop[device]));
 	    printf("Multiplication on device %d took %lf seconds\n", device, ms_timer[device]/1000);
@@ -93,7 +93,7 @@ int main()
 
     //kuhdaTestM(0, n, 0, n, h_C);
     //kuhdaPrintM(h_C);
-    printf("%lf  %lf \n%lf  %lf \n", h_C->data[(n-1)*x-1], h_C->data[(n-1)*x], h_C->data[n*x-1], h_C->data[n*x]);
+    //printf("%lf  %lf \n%lf  %lf \n", h_C->data[(n-1)*x-1], h_C->data[(n-1)*x], h_C->data[n*x-1], h_C->data[n*x]);
 
     // free all matrices
     printf("Cleaning up ..\n");
