@@ -87,11 +87,12 @@ typedef struct matrix {
   double * data;     /* pointer to array of length r*c */
 } matrix;
 
+/* deprecated structure: unused
 typedef struct can {
-  cublasHandle_t handle;   /* pointer type to an opaque structure holding the cuBLAS library context */
-  cudaStream_t *streams;   /* stream IDs */
+  cublasHandle_t handle;   // pointer type to an opaque structure holding the cuBLAS library context 
+  cudaStream_t *streams;   // stream IDs 
 } can;
-
+*/
 
 /*______ _    _ _   _  _____ _______ _____ ____  _   _  _____
 |  ____| |  | | \ | |/ ____|__   __|_   _/ __ \| \ | |/ ____|
@@ -133,7 +134,7 @@ void *TileGPUAddToHost(unsigned long rowstart, unsigned long rowstop, unsigned l
 
 
 /* CUDA-specific */
-can *kuhdaMilkCan(int streamnums);
+//can *kuhdaMilkCan(int streamnums);
 cudaError_t gpuAssert(cudaError_t code, const char *file, int line);
 
 /* Necessary computations*/

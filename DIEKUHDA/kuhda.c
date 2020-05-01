@@ -458,48 +458,6 @@ void kuhdaTileToHost(unsigned long rows, unsigned long cols, double *d_tile, mat
 }
 
 
-/********************************************/
-/* 				cuda-specific		  		*/
-/********************************************/
-
-/* kuhdaMilkCan(int streamnums):
-Arguments: number of streams
-Return value: euter with strams and handles, or NULL if an error occured */
-can *kuhdaMilkCan(int streamnums){
-	if (streamnums <= 0){
-		INPUT_ILL_ERR_D(streamnums);
-		return NULL;
-	}
-	can *mm = (can *) malloc(sizeof(*mm));
-	if (mm == NULL) {
-		MEM_ERR;
-		free(mm);
-		return NULL;
-	}
-	int failure;
-	failure = cublasCreate(&(mm->handle));
-	if (failure != 0){
-		FAIL_ERR(failure);
-		return NULL;
-	}
-	mm->streams = (cudaStream_t *) malloc(streamnums*sizeof(cudaStream_t));
-	if (mm->streams == NULL) {
-		MEM_ERR;
-		free(mm->streams);
-		free(mm);
-		return NULL;
-	}
-	int i;
-	for (i = 0; i < streamnums; ++i){
-		failure = cudaStreamCreate(&(mm->streams)[i]);
-		if (failure != 0){
-			FAIL_ERR(failure);
-			return NULL;
-		}
-	}
-	return mm;
-}
-
 /*gpuAssert(cudaError_t code, const char *file, int line): check for cuda errors.
 Arguments: code = cudafunction to be wrapped around, file and line = place where the error occured */
 cudaError_t gpuAssert(cudaError_t code, const char *file, int line){
@@ -713,3 +671,47 @@ double *kuhdaTileToGPU(unsigned long rowstart, unsigned long rowstop, unsigned l
 
 	return d_tile;
 }
+
+
+/********************************************/
+/* 				cuda-specific		  		*/
+/********************************************/
+/* kuhdaMilkCan(int streamnums):
+Arguments: number of streams
+Return value: euter with strams and handles, or NULL if an error occured */
+/*
+can *kuhdaMilkCan(int streamnums){
+	if (streamnums <= 0){
+		INPUT_ILL_ERR_D(streamnums);
+		return NULL;
+	}
+	can *mm = (can *) malloc(sizeof(*mm));
+	if (mm == NULL) {
+		MEM_ERR;
+		free(mm);
+		return NULL;
+	}
+	int failure;
+	failure = cublasCreate(&(mm->handle));
+	if (failure != 0){
+		FAIL_ERR(failure);
+		return NULL;
+	}
+	mm->streams = (cudaStream_t *) malloc(streamnums*sizeof(cudaStream_t));
+	if (mm->streams == NULL) {
+		MEM_ERR;
+		free(mm->streams);
+		free(mm);
+		return NULL;
+	}
+	int i;
+	for (i = 0; i < streamnums; ++i){
+		failure = cudaStreamCreate(&(mm->streams)[i]);
+		if (failure != 0){
+			FAIL_ERR(failure);
+			return NULL;
+		}
+	}
+	return mm;
+}
+*/
