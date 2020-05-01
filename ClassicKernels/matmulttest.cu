@@ -2,8 +2,8 @@
 #include "../DIEKUHDA/kuhda.h"
 #include "cuda.h"
 
-// Run with nvcc -O3 -lcublas ../DIEKUHDA/kuhda.c kernels.cu matmulttest.cu
-#define THREADS 32
+// Run with nvcc -O3 -lcublas ../DIEKUHDA/kuhda.cu matmulttest.cu && ./a.out
+#define THREADS 16
 
 __global__ void fill_matrix(double* A, const int rows, const int cols) {
 	int counter = 0;
@@ -29,6 +29,23 @@ __global__ void matrixMultiplicationKernel(double* A, double* B, double* C, cons
 	C[ROW * N + COL] = tmpSum;
 }
 
+__global__ void gpu_mul(double * const A, double * const B, double * const C, const int rows_A, const int cols_A) {
+	
+	//Each Thread computes one element of C
+	double C_element = 0.0;
+	const int 	row = blockIdx.y * blockDim.y + threadIdx.y,
+				col = blockIdx.x * blockDim.x + threadIdx.x;
+	
+	if (row < cols_A && col < cols_A) 
+	{
+		for (int k = 0; k < rows_A; ++k) {
+			C_element += A[k * cols_A + row] * A[k * cols_A + col];
+		}
+		C[row * cols_A + col] = C_element;
+	}
+}
+
+
 //extern void hello_device_wrapper(int printme);
 //extern void gpu_mul_wrapper(double const * const A, double * const C, const int rows_A, const int cols_A);
 
@@ -40,7 +57,7 @@ int main() {
 	
 	// Set cuda device
 	gpuErrchk(cudaSetDevice(0));
-	unsigned long n = 1000;
+	unsigned long n = 16384;
 
 	// Containers for host and device matrices:
 	matrix *h_A  = kuhdaMallocMP1(n, n); // diagonal A matrix
@@ -71,15 +88,12 @@ int main() {
 	gpuErrchk(cudaStreamSynchronize(copystream1));
 	gpuErrchk(cudaStreamSynchronize(copystream2));
 
-	// Grid dimmensions for multiplication
-	//grid = dim3(ceil(((float)cols_C)/block.x), ceil(((float)rows_C)/block.y));
-	
 	// Perform the multiplications	
 	gpuErrchk(cudaDeviceSynchronize());
 	gpuErrchk(cudaEventRecord(mainstart, mainstream));
 
 	//fill_matrix<<<10, 10>>>(d_C->data, d_C->r, d_C->c);
-	
+	/*
 	int N = n;
 	dim3 threadsPerBlock(N, N);
     dim3 blocksPerGrid(1, 1);
@@ -89,9 +103,18 @@ int main() {
         blocksPerGrid.x = ceil(double(N)/double(threadsPerBlock.x));
         blocksPerGrid.y = ceil(double(N)/double(threadsPerBlock.y));
 	}
-		
 	matrixMultiplicationKernel<<<blocksPerGrid,threadsPerBlock>>>(d_A->data, d_B->data, d_C->data, n);
+	*/
 
+	// Grid dimmensions for multiplication
+	// THREADS = 32 so sizeof(block) = 32*32 = 1024
+	dim3 block(THREADS, THREADS);
+	// grid = ceil(16384/32) = 512
+	dim3 grid = dim3(ceil(((float)n)/block.x), ceil(((float)n)/block.y));
+	
+	// Perform the multiplications	
+	gpu_mul<<<grid, block>>>(d_A->data, d_B->data, d_C->data, n, n);
+	
 	gpuErrchk(cudaPeekAtLastError());
 	gpuErrchk(cudaDeviceSynchronize());
 	
