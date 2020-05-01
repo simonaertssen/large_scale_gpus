@@ -1,15 +1,33 @@
 #include <stdio.h>
-extern "C" {
 #include "../DIEKUHDA/kuhda.h"
-}
+#include "cuda.h"
 
-// Run with nvcc -O3 -arch=sm_70 -lcublas ../DIEKUHDA/kuhda.c kernels.cu matmulttest.cu
+// Run with nvcc -O3 -lcublas ../DIEKUHDA/kuhda.c kernels.cu matmulttest.cu
 #define THREADS 32
 
-// Inclusion of .cu in seperate file is necessary:
-// See: https://stackoverflow.com/questions/30247592/compiling-and-linking-pure-c-and-cuda-code-warning-implicit-declaration-of-fun
-#include "kernels.cuh"
-#include "cuda.h"
+__global__ void fill_matrix(double* A, const int rows, const int cols) {
+	int counter = 0;
+	for (counter = 0; counter < rows*cols; ++counter) {
+		A[counter] = cols;
+	}
+}
+
+__global__ void matrixMultiplicationKernel(double* A, double* B, double* C, const int N) {
+
+    int ROW = blockIdx.y*blockDim.y+threadIdx.y;
+    int COL = blockIdx.x*blockDim.x+threadIdx.x;
+
+	double tmpSum = 0.0;
+	int i;
+
+    if (ROW < N && COL < N) {
+        // each thread computes one element of the block sub-matrix
+        for (i = 0; i < N; i++) {
+            tmpSum += A[ROW * N + i] * B[i * N + COL];
+        }
+    }
+	C[ROW * N + COL] = tmpSum;
+}
 
 //extern void hello_device_wrapper(int printme);
 //extern void gpu_mul_wrapper(double const * const A, double * const C, const int rows_A, const int cols_A);
@@ -18,9 +36,11 @@ extern "C" {
 //#include "cuda_runtime.h"
 
 
-int main() {				
-	unsigned long n = 1000, size = n * n * sizeof(double);
-	unsigned long x = n/2, sizex = x * x * sizeof(double); // x * x = dimension of quarter tile
+int main() {			
+	
+	// Set cuda device
+	gpuErrchk(cudaSetDevice(0));
+	unsigned long n = 1000;
 
 	// Containers for host and device matrices:
 	matrix *h_A  = kuhdaMallocMP1(n, n); // diagonal A matrix
@@ -48,32 +68,33 @@ int main() {
 	TileHostToGPU(0, n, 0, n, h_A, d_A, copystream1);
 	TileHostToGPU(0, n, 0, n, h_B, d_B, copystream2);
 
+	gpuErrchk(cudaStreamSynchronize(copystream1));
+	gpuErrchk(cudaStreamSynchronize(copystream2));
 
-	int testint = 12;
-	hello_device_wrapper(testint);
+	// Grid dimmensions for multiplication
+	//grid = dim3(ceil(((float)cols_C)/block.x), ceil(((float)rows_C)/block.y));
 	
-	// Set cuda device
-	gpuErrchk(cudaSetDevice(0));
+	// Perform the multiplications	
+	gpuErrchk(cudaDeviceSynchronize());
+	gpuErrchk(cudaEventRecord(mainstart, mainstream));
 
-
-	/*
-	dim3 block(THREADS, THREADS);
-	dim3 grid(ceil(((float)cols_A)/block.x), ceil(((float)rows_A)/block.y));
-	*/
+	//fill_matrix<<<10, 10>>>(d_C->data, d_C->r, d_C->c);
+	
+	int N = n;
+	dim3 threadsPerBlock(N, N);
+    dim3 blocksPerGrid(1, 1);
+    if (N*N > 512){
+        threadsPerBlock.x = 512;
+        threadsPerBlock.y = 512;
+        blocksPerGrid.x = ceil(double(N)/double(threadsPerBlock.x));
+        blocksPerGrid.y = ceil(double(N)/double(threadsPerBlock.y));
+	}
+		
+	matrixMultiplicationKernel<<<blocksPerGrid,threadsPerBlock>>>(d_A->data, d_B->data, d_C->data, n);
 
 	gpuErrchk(cudaPeekAtLastError());
 	gpuErrchk(cudaDeviceSynchronize());
-
-	// Grid dimmensions for multiplication
-	/*
-	grid = dim3(ceil(((float)cols_C)/block.x), ceil(((float)rows_C)/block.y));
 	
-	// Perform the multiplications	
-	gpuErrchk(cudaEventRecord(mainstart, mainstream));
-
-	gpu_mul<<<grid, block>>>(d_A, d_C, rows_A, cols_A);
-	*/
-
 	gpuErrchk(cudaEventRecord(mainstop, mainstream));
     gpuErrchk(cudaEventSynchronize(mainstop));
     gpuErrchk(cudaEventElapsedTime(&mainstreamtimer, mainstart, mainstop));
@@ -81,9 +102,13 @@ int main() {
 	
 	//gpuErrchk(cudaPeekAtLastError());
 	gpuErrchk(cudaDeviceSynchronize());
+	
+	TileGPUAddToHost(0, n, 0, n, d_C, h_C, copystream1);
+	gpuErrchk(cudaStreamSynchronize(copystream1));
 
 	// Test the result
-    //kuhdaTestM(0, n, 0, n, h_C);
+	kuhdaTestM(0, n, 0, n, h_C);
+	//kuhdaPrintM(h_C);
 	
 	// free all matrices
     printf("Cleaning up ..\n");

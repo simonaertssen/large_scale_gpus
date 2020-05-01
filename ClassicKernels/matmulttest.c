@@ -6,6 +6,7 @@
 // Run with:
 // nvcc -c -o kernels.o kernels.cu
 // nvcc -O3 -lcublas kernels.o ../DIEKUHDA/kuhda.c matmulttest.c
+// nvcc -O3 -arch=sm_70 -lcublas ../DIEKUHDA/kuhda.c kernels.cu matmulttest.c && ./a.out
 
 // Inclusion of .cu in seperate file is necessary:
 // See: https://stackoverflow.com/questions/30247592/compiling-and-linking-pure-c-and-cuda-code-warning-implicit-declaration-of-fun
@@ -19,10 +20,9 @@ extern void hello_device_wrapper(int printme);
 //#include <cuda.h>
 //#include "cuda_runtime.h"
 
-
 int main() {				
-	unsigned long n = 1000, size = n * n * sizeof(double);
-	unsigned long x = n/2, sizex = x * x * sizeof(double); // x * x = dimension of quarter tile
+	unsigned long n = 1000;
+	unsigned long x = n/2; // x * x = dimension of quarter tile
 
 	// Containers for host and device matrices:
 	matrix *h_A  = kuhdaMallocMP1(n, n); // diagonal A matrix
