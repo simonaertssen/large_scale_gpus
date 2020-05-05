@@ -5,6 +5,9 @@ sxm2sh -X
 # POWER9:
 p9sh
 
+or better:
+ESUB_BYPASS=1 BSUB_QUIET=1 bsub -q power9 -env TERM -app p9sh -n 32 -gpu "num=4:mode=shared" -Is -J p9sh "reset; /bin/bash -l"
+
 = enter the designated cluster
 
 lscpu
