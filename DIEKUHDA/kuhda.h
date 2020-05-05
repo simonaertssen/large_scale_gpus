@@ -139,7 +139,18 @@ cudaError_t gpuAssert(cudaError_t code, const char *file, int line);
 
 /* Necessary computations*/
 // A timer to record the necessary computations when performing DGEMM
-struct MatMultimer {
+class MatMultimer {
+  public:
+    cudaStream_t stream;
+		cudaEvent_t start;
+		cudaEvent_t stop;
+    DGEMMtimer();
+    ~DGEMMtimer();
+    void Start();
+    void Stop();
+    long unsigned int GFLOPS_DGEMM(m, n, k);
+    long unsigned int GFLOPS_MM(m, n, k);
+
   DGEMMtimer() {
     gpuErrchk(cudaStreamCreate(&stream));
     gpuErrchk(cudaEventCreate(&start));
@@ -176,10 +187,7 @@ struct MatMultimer {
     long unsigned int numerator = (M * N) * (K - 2), denominator = 1.0e6 * elapsedtime;
 		return numerator / denominator;
 	}
-	private :
-    cudaStream_t stream;
-		cudaEvent_t start;
-		cudaEvent_t stop;
+
 };
 
 int kuhdamm(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, cudaStream_t stream, int verbose);

@@ -137,12 +137,12 @@ void kuhdaFreeM(matrix *freethismatrix, char type){
 	case 'p': // a kuhda matrix with data member pinned on the host
     	gpuErrchk(cudaFreeHost(freethismatrix->data));
 		gpuErrchk(cudaFreeHost(freethismatrix));
-      	break; 
-	
+      	break;
+
    	case 'k': // a kuhda matrix with data member on the host
    		free(freethismatrix->data);
    		free(freethismatrix);
-		break; 
+		break;
 	}
 }
 
@@ -467,6 +467,52 @@ cudaError_t gpuAssert(cudaError_t code, const char *file, int line){
 /********************************************/
 /* 			Necessary computations			*/
 /********************************************/
+// class MatMultimer: condense the amount of code per script into a single timer to take care of the
+// necessary timing finctions when timing matrix multiplications
+
+class MatMultimer {
+  public:
+    cudaStream_t stream;
+		cudaEvent_t start;
+		cudaEvent_t stop;
+
+  	DGEMMtimer() {
+    	gpuErrchk(cudaStreamCreate(&stream));
+    	gpuErrchk(cudaEventCreate(&start));
+			gpuErrchk(cudaEventCreate(&stop));
+  	}
+		~DGEMMtimer() {
+	    gpuErrchk(cudaStreamDestroy(stream));
+			gpuErrchk(cudaEventDestroy(start));
+			gpuErrchk(cudaEventDestroy(stop));
+		}
+		void Start() {
+			cudaEventRecord(start, stream);
+		}
+		void Stop() {
+			cudaEventRecord(stop, stream);
+		}
+		long unsigned int GFLOPS_DGEMM(m, n, k) {
+	    // Calculate the number of operations necessary for a matrix multiplication A * B with [A] = m x k and [B] = k x n
+	    // See https://forums.developer.nvidia.com/t/how-to-compute-gflops-for-gemm-blas/20218/6
+			float elapsedtime;
+	    long int M = (long int)m, N = (long int)n, K = (long int)k;
+			cudaEventSynchronize(stop);
+			cudaEventElapsedTime(&elapsedtime, start, stop);
+	    long unsigned int numerator = (M * N) * (2 * K + 2), denominator = 1.0e6 * elapsedtime;
+			return numerator / denominator;
+		}
+	  long unsigned int GFLOPS_MM(m, n, k) {
+	    // Calculate the number of operations necessary for a matrix multiplication A * B with [A] = m x k and [B] = k x n
+	    // See https://software.intel.com/en-us/articles/a-simple-example-to-measure-the-performance-of-an-intel-mkl-function
+			float elapsedtime;
+	    long int M = (long int)m, N = (long int)n, K = (long int)k;
+			cudaEventSynchronize(stop);
+			cudaEventElapsedTime(&elapsedtime, start, stop);
+	    long unsigned int numerator = (M * N) * (K - 2), denominator = 1.0e6 * elapsedtime;
+			return numerator / denominator;
+		}
+};
 
 /* kuhdaTimeDGEMM(unsigned long m, unsigned long n, unsigned long k): compute the number of
 floating point operations per second, as performed by cublasDgemm.
@@ -516,8 +562,8 @@ long long kuhdaTimeDGEMM(matrix *d_matrix, int reps, int verbose){
 		}
 	}
 	gpuErrchk(cudaStreamSynchronize(0));
-    //gpuErrchk(cudaDeviceSynchronize()); // Not necessary when using cudaEvents
-    gpuErrchk(cudaEventRecord(stop, 0));
+  //gpuErrchk(cudaDeviceSynchronize()); // Not necessary when using cudaEvents
+  gpuErrchk(cudaEventRecord(stop, 0));
 	gpuErrchk(cudaEventSynchronize(stop));
 
 	float milliseconds = 0;
@@ -540,12 +586,12 @@ long long kuhdaTimeDGEMM(matrix *d_matrix, int reps, int verbose){
 
 
 
-/* kuhdamm(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, int verbose): 
+/* kuhdamm(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, int verbose):
 perform matrix-matrix multiplication of tiles on a device, performed by cublasDgemm.
 C <- alpha * AB + beta*C	 with	 [A] = m x k, [B] = k x n, [C] = m x n
 
 Arguments: m, n, k = formal dimensions of the matrices A, B and C,
-verbose = whether we want to print the output on the console 
+verbose = whether we want to print the output on the console
 ('0' = nothing prints, '1' = results will be printed)
 
 Return value: the number of GigaFlops (GFLOPS), or NULL if an error occured */
@@ -553,13 +599,13 @@ int kuhdamm(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, cudaStream_t s
 	if (d_A_tile == NULL || d_B_tile == NULL || d_C_tile == NULL){
 		INPUT_NULL_ERR;
 		return -1;
-	} 
+	}
 	if (d_A_tile->r != d_C_tile->r || d_A_tile->c != d_B_tile->r || d_B_tile->c != d_C_tile->c){
 		INPUT_ILL_ERR_D(d_A_tile->r);
 		return DIEKUHDA_DIMENSION_MISMATCH;
-	} 
+	}
 	if (stream == NULL) INPUT_NULL_ERR;
-	
+
 	// Data for the computations:
 	unsigned int m = d_A_tile->r, k = d_A_tile->c, n = d_C_tile->c;
 	double alpha = 1.0, beta  = 0.0;
