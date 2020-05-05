@@ -20,7 +20,7 @@ extern void hello_device_wrapper(int printme);
 //#include <cuda.h>
 //#include "cuda_runtime.h"
 
-int main() {				
+int main() {
 	unsigned long n = 1000;
 	unsigned long x = n/2; // x * x = dimension of quarter tile
 
@@ -29,7 +29,7 @@ int main() {
 	matrix *h_B  = kuhdaMallocMP1(n, n); // diagonal B matrix
 	matrix *h_C  = kuhdaMallocMP(n, n); // empty C matrix
 
-	matrix *d_A  = kuhdaMallocDeviceM(n, n); 
+	matrix *d_A  = kuhdaMallocDeviceM(n, n);
 	matrix *d_B  = kuhdaMallocDeviceM(n, n);
 	matrix *d_C  = kuhdaMallocDeviceM(n, n);
 
@@ -40,9 +40,9 @@ int main() {
 	gpuErrchk(cudaStreamCreate(&copystream2));
 
 	// Allocate the timer:
-    cudaEvent_t mainstart, mainstop;
+  cudaEvent_t mainstart, mainstop;
 	float mainstreamtimer;
-    gpuErrchk(cudaEventCreate(&mainstart));
+  gpuErrchk(cudaEventCreate(&mainstart));
 	gpuErrchk(cudaEventCreate(&mainstop));
 	gpuErrchk(cudaEventRecord(mainstart, mainstream));
 
@@ -53,7 +53,7 @@ int main() {
 
 	int testint = 12;
 	hello_device_wrapper(testint);
-	
+
 	// Set cuda device
 	gpuErrchk(cudaSetDevice(0));
 
@@ -69,30 +69,30 @@ int main() {
 	// Grid dimmensions for multiplication
 	/*
 	grid = dim3(ceil(((float)cols_C)/block.x), ceil(((float)rows_C)/block.y));
-	
-	// Perform the multiplications	
+
+	// Perform the multiplications
 	gpuErrchk(cudaEventRecord(mainstart, mainstream));
 
 	gpu_mul<<<grid, block>>>(d_A, d_C, rows_A, cols_A);
 	*/
 
 	gpuErrchk(cudaEventRecord(mainstop, mainstream));
-    gpuErrchk(cudaEventSynchronize(mainstop));
-    gpuErrchk(cudaEventElapsedTime(&mainstreamtimer, mainstart, mainstop));
+  gpuErrchk(cudaEventSynchronize(mainstop));
+  gpuErrchk(cudaEventElapsedTime(&mainstreamtimer, mainstart, mainstop));
 	printf("Multiplication on device 0 took %lf seconds\n", mainstreamtimer/1000);
-	
+
 	//gpuErrchk(cudaPeekAtLastError());
 	gpuErrchk(cudaDeviceSynchronize());
 
 	// Test the result
     //kuhdaTestM(0, n, 0, n, h_C);
-	
+
 	// free all matrices
     printf("Cleaning up ..\n");
     gpuErrchk(cudaStreamDestroy(mainstream));
 	gpuErrchk(cudaStreamDestroy(copystream1));
 	gpuErrchk(cudaStreamDestroy(copystream2));
-	
+
     gpuErrchk(cudaEventDestroy(mainstart));
 	gpuErrchk(cudaEventDestroy(mainstop));
 
