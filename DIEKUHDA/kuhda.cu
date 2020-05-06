@@ -203,6 +203,35 @@ void kuhdaTestM(unsigned long rowstart, unsigned long rowstop, unsigned long col
 	printf("Test succeeded. No errors.\n");
 }
 
+// Test whether all elements of this matrix are equal to its' dimensions.
+// Only for the result of multiplication on square ones!
+int kuhdaTestMsilent(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *testhismatrix, int verbose);
+	if (testhismatrix == NULL){
+		INPUT_NULL_ERR;
+		return -1;
+	}
+	if (rowstart - rowstop != colstart - colstop){
+		if (verbose != 0) printf("The testfunction is only deigned for square tiles.");
+		return -1;
+	}
+
+	unsigned long i, j, value = 0, as_we_would_expect = (int)(rowstop - rowstart);
+	for (i = rowstart; i < rowstop; ++i){
+		for (j = colstart; j < colstop; ++j){
+			value = (int)testhismatrix->data[i*testhismatrix->c + j];
+			if (value != as_we_would_expect){
+				if (verbose != 0) printf("The matrix does not contain the expected results at (%d, %d) = %d != %d\n", i,j, value, as_we_would_expect);
+				FAIL_ERR(value);
+				return -1;
+			}
+		}
+	}
+	if (verbose != 0) printf("Test succeeded. No errors.\n");
+	return 0;
+}
+
+
+
 /********************************************/
 /* Allocation/deallocation on the DEVICE(S) */
 /********************************************/
@@ -492,7 +521,7 @@ class MatMultimer {
 		void Stop() {
 			cudaEventRecord(stop, stream);
 		}
-		long unsigned int GFLOPS_DGEMM(m, n, k) {
+		double GFLOPS_DGEMM(m, n, k) {
 	    // Calculate the number of operations necessary for a matrix multiplication A * B with [A] = m x k and [B] = k x n
 	    // See https://forums.developer.nvidia.com/t/how-to-compute-gflops-for-gemm-blas/20218/6
 			float elapsedtime;
@@ -502,7 +531,7 @@ class MatMultimer {
 	    long unsigned int numerator = (M * N) * (2 * K + 2), denominator = 1.0e6 * elapsedtime;
 			return numerator / denominator;
 		}
-	  long unsigned int GFLOPS_MM(m, n, k) {
+	  double GFLOPS_MM(m, n, k) {
 	    // Calculate the number of operations necessary for a matrix multiplication A * B with [A] = m x k and [B] = k x n
 	    // See https://software.intel.com/en-us/articles/a-simple-example-to-measure-the-performance-of-an-intel-mkl-function
 			float elapsedtime;

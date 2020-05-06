@@ -1,0 +1,3 @@
+Time:Wed May  6 21:47:19 2020, File:commandLineArguments.c(20). Integer: 0, float: 20
+Time:Wed May  6 21:47:19 2020, File:commandLineArguments.c(20). Integer: 1, float: 20
+Time:Wed May  6 21:47:19 2020, File:commandLineArguments.c(20). Integer: 2, float: 20

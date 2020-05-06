@@ -121,6 +121,7 @@ matrix *kuhdaMallocDeviceM(unsigned long r, unsigned long c);
 void kuhdaPrintV(vector *freethisvector);
 void kuhdaPrintM(matrix *printhismatrix);
 void kuhdaTestM(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *testhismatrix);
+int kuhdaTestMsilent(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *testhismatrix, int verbose);
 
 
 /* Allocation/deallocation on the device(s)*/
@@ -148,46 +149,8 @@ class MatMultimer {
     ~DGEMMtimer();
     void Start();
     void Stop();
-    long unsigned int GFLOPS_DGEMM(m, n, k);
-    long unsigned int GFLOPS_MM(m, n, k);
-
-  DGEMMtimer() {
-    gpuErrchk(cudaStreamCreate(&stream));
-    gpuErrchk(cudaEventCreate(&start));
-		gpuErrchk(cudaEventCreate(&stop));
-  }
-	~DGEMMtimer() {
-    gpuErrchk(cudaStreamDestroy(stream));
-		gpuErrchk(cudaEventDestroy(start));
-		gpuErrchk(cudaEventDestroy(stop));
-	}
-	void Start() {
-		cudaEventRecord(start, stream);
-	}
-	void Stop() {
-		cudaEventRecord(stop, stream);
-	}
-	long unsigned int GFLOPS_DGEMM(m, n, k) {
-    // Calculate the number of operations necessary for a matrix multiplication A * B with [A] = m x k and [B] = k x n
-    // See https://forums.developer.nvidia.com/t/how-to-compute-gflops-for-gemm-blas/20218/6
-		float elapsedtime;
-    long int M = (long int)m, N = (long int)n, K = (long int)k;
-		cudaEventSynchronize(stop);
-		cudaEventElapsedTime(&elapsedtime, start, stop);
-    long unsigned int numerator = (M * N) * (2 * K + 2), denominator = 1.0e6 * elapsedtime;
-		return numerator / denominator;
-	}
-  long unsigned int GFLOPS_MM(m, n, k) {
-    // Calculate the number of operations necessary for a matrix multiplication A * B with [A] = m x k and [B] = k x n
-    // See https://software.intel.com/en-us/articles/a-simple-example-to-measure-the-performance-of-an-intel-mkl-function
-		float elapsedtime;
-    long int M = (long int)m, N = (long int)n, K = (long int)k;
-		cudaEventSynchronize(stop);
-		cudaEventElapsedTime(&elapsedtime, start, stop);
-    long unsigned int numerator = (M * N) * (K - 2), denominator = 1.0e6 * elapsedtime;
-		return numerator / denominator;
-	}
-
+    double GFLOPS_DGEMM(m, n, k);
+    double GFLOPS_MM(m, n, k);
 };
 
 int kuhdamm(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, cudaStream_t stream, int verbose);
