@@ -140,7 +140,7 @@ cudaError_t gpuAssert(cudaError_t code, const char *file, int line);
 
 /* Necessary computations*/
 // A timer to record the necessary computations when performing DGEMM
-class MatMultimer {
+class DGEMMtimer {
   public:
     cudaStream_t stream;
 		cudaEvent_t start;
@@ -149,8 +149,8 @@ class MatMultimer {
     ~DGEMMtimer();
     void Start();
     void Stop();
-    double GFLOPS_DGEMM(m, n, k);
-    double GFLOPS_MM(m, n, k);
+    double GFLOPS_DGEMM(int m, int n, int k);
+    double GFLOPS_MM(int m, int n, int k);
 };
 
 int kuhdamm(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, cudaStream_t stream, int verbose);

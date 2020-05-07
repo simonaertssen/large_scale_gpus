@@ -205,7 +205,7 @@ void kuhdaTestM(unsigned long rowstart, unsigned long rowstop, unsigned long col
 
 // Test whether all elements of this matrix are equal to its' dimensions.
 // Only for the result of multiplication on square ones!
-int kuhdaTestMsilent(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *testhismatrix, int verbose);
+int kuhdaTestMsilent(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *testhismatrix, int verbose){
 	if (testhismatrix == NULL){
 		INPUT_NULL_ERR;
 		return -1;
@@ -499,49 +499,42 @@ cudaError_t gpuAssert(cudaError_t code, const char *file, int line){
 // class MatMultimer: condense the amount of code per script into a single timer to take care of the
 // necessary timing finctions when timing matrix multiplications
 
-class MatMultimer {
-  public:
-    cudaStream_t stream;
-		cudaEvent_t start;
-		cudaEvent_t stop;
-
-  	DGEMMtimer() {
+	DGEMMtimer::DGEMMtimer() {
     	gpuErrchk(cudaStreamCreate(&stream));
     	gpuErrchk(cudaEventCreate(&start));
-			gpuErrchk(cudaEventCreate(&stop));
+		gpuErrchk(cudaEventCreate(&stop));
   	}
-		~DGEMMtimer() {
-	    gpuErrchk(cudaStreamDestroy(stream));
-			gpuErrchk(cudaEventDestroy(start));
-			gpuErrchk(cudaEventDestroy(stop));
-		}
-		void Start() {
-			cudaEventRecord(start, stream);
-		}
-		void Stop() {
-			cudaEventRecord(stop, stream);
-		}
-		double GFLOPS_DGEMM(m, n, k) {
-	    // Calculate the number of operations necessary for a matrix multiplication A * B with [A] = m x k and [B] = k x n
+	DGEMMtimer::~DGEMMtimer() {
+		gpuErrchk(cudaStreamDestroy(stream));
+		gpuErrchk(cudaEventDestroy(start));
+		gpuErrchk(cudaEventDestroy(stop));
+	}
+	void DGEMMtimer::Start() {
+		cudaEventRecord(start, stream);
+	}
+	void DGEMMtimer::Stop() {
+		cudaEventRecord(stop, stream);
+	}
+	double DGEMMtimer::GFLOPS_DGEMM(int m, int n, int k) {
+		// Calculate the number of operations necessary for a matrix multiplication A * B with [A] = m x k and [B] = k x n
 	    // See https://forums.developer.nvidia.com/t/how-to-compute-gflops-for-gemm-blas/20218/6
-			float elapsedtime;
+		float elapsedtime;
 	    long int M = (long int)m, N = (long int)n, K = (long int)k;
-			cudaEventSynchronize(stop);
-			cudaEventElapsedTime(&elapsedtime, start, stop);
+		cudaEventSynchronize(stop);
+		cudaEventElapsedTime(&elapsedtime, start, stop);
 	    long unsigned int numerator = (M * N) * (2 * K + 2), denominator = 1.0e6 * elapsedtime;
-			return numerator / denominator;
-		}
-	  double GFLOPS_MM(m, n, k) {
+		return numerator / denominator;
+	}
+	double DGEMMtimer::GFLOPS_MM(int m, int n, int k) {
 	    // Calculate the number of operations necessary for a matrix multiplication A * B with [A] = m x k and [B] = k x n
 	    // See https://software.intel.com/en-us/articles/a-simple-example-to-measure-the-performance-of-an-intel-mkl-function
-			float elapsedtime;
+		float elapsedtime;
 	    long int M = (long int)m, N = (long int)n, K = (long int)k;
-			cudaEventSynchronize(stop);
-			cudaEventElapsedTime(&elapsedtime, start, stop);
+		cudaEventSynchronize(stop);
+		cudaEventElapsedTime(&elapsedtime, start, stop);
 	    long unsigned int numerator = (M * N) * (K - 2), denominator = 1.0e6 * elapsedtime;
-			return numerator / denominator;
-		}
-};
+		return numerator / denominator;
+	}
 
 /* kuhdaTimeDGEMM(unsigned long m, unsigned long n, unsigned long k): compute the number of
 floating point operations per second, as performed by cublasDgemm.

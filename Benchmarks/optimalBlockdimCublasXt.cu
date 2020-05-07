@@ -14,9 +14,11 @@ int main(int argc, char *argv[]) {
 	int blockdim;
 	unsigned long n;
 	if (argc == 3){
+		printf("Succesfully received input")
 		blockdim = atoi(argv[1]);
 		n = strtoul(argv[1]);
 	} else {
+		printf("Error receiving input")
 		return -1;
 	}
 
