@@ -1,0 +1,54 @@
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:11:17 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:22:14 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:22:14 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:22:39 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:22:39 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:22:39 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:22:39 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:25:06 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:25:06 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:29:48 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:29:48 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:29:48 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:29:48 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:31:28 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:31:28 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:32:02 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:32:02 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:32:23 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:32:23 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:32:23 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:32:23 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 09:32:23 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 09:32:23 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"

@@ -140,18 +140,54 @@ cudaError_t gpuAssert(cudaError_t code, const char *file, int line);
 
 /* Necessary computations*/
 // A timer to record the necessary computations when performing DGEMM
-class DGEMMtimer {
-  public:
-    cudaStream_t stream;
+struct MatMulTimer
+{ 
+	MatMulTimer() {
+		cudaEventCreate(&start);
+		cudaEventCreate(&stop);
+	}
+ 
+	~MatMulTimer() {
+		cudaEventDestroy(start);
+		cudaEventDestroy(stop);
+	}
+
+	void Start() {
+		cudaEventRecord(start, 0);
+	}
+
+	void Stop() {
+		cudaEventRecord(stop, 0);
+	}
+
+	double GFLOPS_DGEMM(unsigned int m, unsigned int n, unsigned int k) {
+		// Calculate the number of operations necessary for a matrix multiplication A * B with [A] = m x k and [B] = k x n
+	  // See https://forums.developer.nvidia.com/t/how-to-compute-gflops-for-gemm-blas/20218/6
+		float elapsedtime;
+		cudaEventSynchronize(stop);
+		cudaEventElapsedTime(&elapsedtime, start, stop);
+	  long unsigned int numerator = (long unsigned int)(m * n) * (long unsigned int)(2 * k + 2);
+    double denominator = (double) 1.0e6 * elapsedtime;
+		return numerator / denominator;
+  }
+
+  double GFLOPS_MM(int m, int n, int k) {
+	  // Calculate the number of operations necessary for a matrix multiplication A * B with [A] = m x k and [B] = k x n
+	  // See https://software.intel.com/en-us/articles/a-simple-example-to-measure-the-performance-of-an-intel-mkl-function
+		float elapsedtime;
+	  long int M = (long int)m, N = (long int)n, K = (long int)k;
+		cudaEventSynchronize(stop);
+		cudaEventElapsedTime(&elapsedtime, start, stop);
+	  long unsigned int numerator = (M * N) * (K - 2);
+    double denominator = (double) 1.0e6 * elapsedtime;
+		return (double) numerator / denominator;
+	}
+	
+	private :
 		cudaEvent_t start;
 		cudaEvent_t stop;
-    DGEMMtimer();
-    ~DGEMMtimer();
-    void Start();
-    void Stop();
-    double GFLOPS_DGEMM(int m, int n, int k);
-    double GFLOPS_MM(int m, int n, int k);
 };
+
 
 int kuhdamm(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, cudaStream_t stream, int verbose);
 long long kuhdaTimeDGEMM(matrix *d_matrix, int reps, int verbose);
