@@ -143,21 +143,23 @@ cudaError_t gpuAssert(cudaError_t code, const char *file, int line);
 struct MatMulTimer
 { 
 	MatMulTimer() {
+    cudaStreamCreate(&stream);
 		cudaEventCreate(&start);
 		cudaEventCreate(&stop);
 	}
  
 	~MatMulTimer() {
+    cudaStreamDestroy(stream);
 		cudaEventDestroy(start);
 		cudaEventDestroy(stop);
 	}
 
 	void Start() {
-		cudaEventRecord(start, 0);
+		cudaEventRecord(start, stream);
 	}
 
 	void Stop() {
-		cudaEventRecord(stop, 0);
+		cudaEventRecord(stop, stream);
 	}
 
 	double GFLOPS_DGEMM(unsigned int m, unsigned int n, unsigned int k) {
@@ -168,7 +170,8 @@ struct MatMulTimer
 		cudaEventElapsedTime(&elapsedtime, start, stop);
 	  long unsigned int numerator = (long unsigned int)(m * n) * (long unsigned int)(2 * k + 2);
     double denominator = (double) 1.0e6 * elapsedtime;
-		return numerator / denominator;
+    printf("elapsed time = %lf\n", elapsedtime);
+		return (double) numerator / denominator;
   }
 
   double GFLOPS_MM(int m, int n, int k) {
@@ -186,6 +189,7 @@ struct MatMulTimer
 	private :
 		cudaEvent_t start;
 		cudaEvent_t stop;
+    cudaStream_t stream;
 };
 
 

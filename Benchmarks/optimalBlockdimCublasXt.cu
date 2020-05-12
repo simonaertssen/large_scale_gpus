@@ -59,7 +59,7 @@ int main(int argc, char *argv[]) {
     	return -1;
 	}
 
-	int devices[4] = {2, 3};
+	int devices[2] = {2, 3};
 	if (cublasXtDeviceSelect(handle, device_count, devices) != 0) {
 		LOG(ERROR, "CUBLASXT device selection error");
 		cleanup(handle, h_A, h_B, h_C, timer);
