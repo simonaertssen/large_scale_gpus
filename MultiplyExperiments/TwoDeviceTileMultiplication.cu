@@ -1,4 +1,4 @@
-// Program to test the allocation and sending of quarter tiles
+// Program to test the allocation and sending of quarter tiles to erform matrix multiplication on devices 2 and 3
 
 #include <stdio.h>
 
