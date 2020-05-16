@@ -484,12 +484,26 @@ void kuhdaTileToHost(unsigned long rows, unsigned long cols, double *d_tile, mat
 /*gpuAssert(cudaError_t code, const char *file, int line): check for cuda errors.
 Arguments: code = cudafunction to be wrapped around, file and line = place where the error occured */
 cudaError_t gpuAssert(cudaError_t code, const char *file, int line){
-   if (code != cudaSuccess){
-      fprintf(stderr,"GPUassert: %s in file %s at line %d\n", cudaGetErrorString(code), file, line);
-      //exit(code);
+	if (code != cudaSuccess){
+		fprintf(stderr, "GPUassert: error in file %s, line %d", __FILE__, __LINE__);
+  	fprintf(stderr,"code %d with reason %s\n", code, cudaGetErrorString(code));
+    exit(1);
    }
    return code;
 }
+
+void kuhdaWarmup(int devicecount){
+	// Sync current device
+	cudaDeviceSynchronize()
+	int device;
+	for(device = 0; device < devicecount; ++device){
+		GPUCHECK(cudaSetDevice(device));
+		int *testint = 0;
+		GPUCHECK(cudaMalloc((void**)&testint,sizeof(int)));
+		cudaDeviceSynchronize()
+	}
+}
+
 
 
 

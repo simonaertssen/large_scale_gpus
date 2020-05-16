@@ -67,6 +67,29 @@ Version: 1.0 13/03/2020
 #define INPUT_ILL_ERR_LF(x) fprintf(stderr,"%s: received illegal input %lf\n",__func__, x)
 #define INPUT_ILL_ERR_LU(x) fprintf(stderr,"%s: received illegal input %u\n",__func__, x)
 
+// New definitions for error checks:
+#define GPUCHECK(call)
+{
+    const cudaError_t error = call;
+    if (error != cudaSuccess)
+    {
+      fprintf(stderr, "GPUCHECK: error in file %s, line %d", __FILE__, __LINE__);
+      fprintf(stderr,"error code = %d with reason %s\n", error, cudaGetErrorString(error));
+      exit(1);
+    }
+}
+#define CUBLASCHECK(call)
+{
+    cublasStatus_t error;
+    if ((err = (call)) != CUBLAS_STATUS_SUCCESS)
+    {
+      fprintf(stderr, "CUBLASCHECK: error in file %s, line %d", __FILE__, __LINE__);
+      fprintf(stderr,"error code = %d\n", error);
+      exit(1);
+    }
+}
+
+
 /* _____ _______ _____  _    _  _____ _______ _    _ _____  ______  _____
   / ____|__   __|  __ \| |  | |/ ____|__   __| |  | |  __ \|  ____|/ ____|
  | (___    | |  | |__) | |  | | |       | |  | |  | | |__) | |__  | (___
@@ -135,19 +158,19 @@ void *TileGPUAddToHost(unsigned long rowstart, unsigned long rowstop, unsigned l
 
 
 /* CUDA-specific */
-//can *kuhdaMilkCan(int streamnums);
+void kuhdaWarmup(int devicecount);
 cudaError_t gpuAssert(cudaError_t code, const char *file, int line);
 
 /* Necessary computations*/
 // A timer to record the necessary computations when performing DGEMM
 struct MatMulTimer
-{ 
+{
 	MatMulTimer() {
     cudaStreamCreate(&stream);
 		cudaEventCreate(&start);
 		cudaEventCreate(&stop);
 	}
- 
+
 	~MatMulTimer() {
     cudaStreamDestroy(stream);
 		cudaEventDestroy(start);
@@ -185,13 +208,45 @@ struct MatMulTimer
     double denominator = (double) 1.0e6 * elapsedtime;
 		return (double) numerator / denominator;
 	}
-	
+
 	private :
 		cudaEvent_t start;
 		cudaEvent_t stop;
     cudaStream_t stream;
 };
 
+
+struct Timer
+{
+	Timer() {
+    cudaStreamCreate(&stream);
+		cudaEventCreate(&start);
+		cudaEventCreate(&stop);
+	}
+
+	~Timer() {
+    cudaStreamDestroy(stream);
+		cudaEventDestroy(start);
+		cudaEventDestroy(stop);
+	}
+
+	void Start() {
+		cudaEventRecord(start, stream);
+	}
+
+	float Stop() {
+		cudaEventRecord(stop, stream);
+    cudaEventSynchronize(stop);
+    float elapsedtime;
+		cudaEventElapsedTime(&elapsedtime, start, stop);
+    return elapsedtime;
+	}
+
+	private :
+		cudaEvent_t start;
+		cudaEvent_t stop;
+    cudaStream_t stream;
+};
 
 int kuhdamm(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, cudaStream_t stream, int verbose);
 long long kuhdaTimeDGEMM(matrix *d_matrix, int reps, int verbose);
