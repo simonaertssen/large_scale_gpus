@@ -494,14 +494,36 @@ cudaError_t gpuAssert(cudaError_t code, const char *file, int line){
 
 void kuhdaWarmup(int devicecount){
 	// Sync current device
-	cudaDeviceSynchronize()
+	cudaDeviceSynchronize();
 	int device;
 	for(device = 0; device < devicecount; ++device){
 		GPUCHECK(cudaSetDevice(device));
 		int *testint = 0;
 		GPUCHECK(cudaMalloc((void**)&testint,sizeof(int)));
-		cudaDeviceSynchronize()
+		cudaDeviceSynchronize();
 	}
+}
+
+
+// New definitions for error checks:
+void CUBLASCHECK(cublasStatus_t error)
+{
+    if (error != CUBLAS_STATUS_SUCCESS)
+    {
+      fprintf(stderr, "CUBLASCHECK: error in file %s, line %d", __FILE__, __LINE__);
+      fprintf(stderr,"error code = %d\n", error);
+      exit(1);
+    }
+}
+
+void GPUCHECK(const cudaError_t call)
+{
+    if (call != cudaSuccess)
+    {
+      fprintf(stderr, "GPUCHECK: error in file %s, line %d", __FILE__, __LINE__);
+      fprintf(stderr,"error code = %d with reason %s\n", call, cudaGetErrorString(call));
+      exit(1);
+    }
 }
 
 

@@ -24,8 +24,8 @@ int main()
     //omp_set_num_threads(2);
     //omp_set_dynamic(0);
     //gpuErrchk(cudaSetDevice(0));
-	unsigned long n = 1000, size = n * n * sizeof(double);
-	int x = n/2, sizex = x * x * sizeof(double); // x * x = dimension of quarter tile
+	unsigned long n = 1000;
+	int x = n/2; // x * x = dimension of quarter tile
 
 	// Containers for host and device matrices
 	matrix *h_A  = kuhdaMallocMP1(n, n); // diagonal A matrix
@@ -133,7 +133,7 @@ int main()
     }
     
     // Dis work??
-    cublasShutdown();
+    // cublasShutdown();
 
 	return 0;
 }

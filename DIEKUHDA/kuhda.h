@@ -68,27 +68,8 @@ Version: 1.0 13/03/2020
 #define INPUT_ILL_ERR_LU(x) fprintf(stderr,"%s: received illegal input %u\n",__func__, x)
 
 // New definitions for error checks:
-#define GPUCHECK(call)
-{
-    const cudaError_t error = call;
-    if (error != cudaSuccess)
-    {
-      fprintf(stderr, "GPUCHECK: error in file %s, line %d", __FILE__, __LINE__);
-      fprintf(stderr,"error code = %d with reason %s\n", error, cudaGetErrorString(error));
-      exit(1);
-    }
-}
-#define CUBLASCHECK(call)
-{
-    cublasStatus_t error;
-    if ((err = (call)) != CUBLAS_STATUS_SUCCESS)
-    {
-      fprintf(stderr, "CUBLASCHECK: error in file %s, line %d", __FILE__, __LINE__);
-      fprintf(stderr,"error code = %d\n", error);
-      exit(1);
-    }
-}
-
+void CUBLASCHECK(cublasStatus_t error);
+void GPUCHECK(const cudaError_t call);
 
 /* _____ _______ _____  _    _  _____ _______ _    _ _____  ______  _____
   / ____|__   __|  __ \| |  | |/ ____|__   __| |  | |  __ \|  ____|/ ____|
