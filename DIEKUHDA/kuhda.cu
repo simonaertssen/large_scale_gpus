@@ -485,7 +485,7 @@ void kuhdaTileToHost(unsigned long rows, unsigned long cols, double *d_tile, mat
 Arguments: code = cudafunction to be wrapped around, file and line = place where the error occured */
 cudaError_t gpuAssert(cudaError_t code, const char *file, int line){
 	if (code != cudaSuccess){
-		fprintf(stderr, "GPUassert: error in file %s, line %d", __FILE__, __LINE__);
+		fprintf(stderr, "GPUassert: error in file %s, line %d\n", file, line);
   	fprintf(stderr,"code %d with reason %s\n", code, cudaGetErrorString(code));
     exit(1);
    }
@@ -510,7 +510,7 @@ void CUBLASCHECK(cublasStatus_t error)
 {
     if (error != CUBLAS_STATUS_SUCCESS)
     {
-      fprintf(stderr, "CUBLASCHECK: error in file %s, line %d", __FILE__, __LINE__);
+      fprintf(stderr, "CUBLASCHECK: error in file %s, line %d \n", __FILE__, __LINE__);
       fprintf(stderr,"error code = %d\n", error);
       exit(1);
     }
@@ -520,7 +520,7 @@ void GPUCHECK(const cudaError_t call)
 {
     if (call != cudaSuccess)
     {
-      fprintf(stderr, "GPUCHECK: error in file %s, line %d", __FILE__, __LINE__);
+      fprintf(stderr, "GPUCHECK: error in file %s, line %d \n", __FILE__, __LINE__);
       fprintf(stderr,"error code = %d with reason %s\n", call, cudaGetErrorString(call));
       exit(1);
     }

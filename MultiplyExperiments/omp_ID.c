@@ -2,6 +2,8 @@
 #include <stdio.h>
 
 
+// gcc omp_ID.c -fopenmp -Wall
+
  int HelloFunc()
 {
     int i;

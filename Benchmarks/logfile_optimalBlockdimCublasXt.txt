@@ -52,3 +52,21 @@ Fri May  8 09:32:23 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
 Fri May  8 09:32:23 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
 Fri May  8 09:32:23 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
 Fri May  8 09:32:23 2020, optimalBlockdimCublasXt.cu(100) SUCCESS "Test finished succesfully"
+Fri May  8 14:49:19 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 14:49:19 2020, optimalBlockdimCublasXt.cu(64) ERROR "CUBLASXT device selection error"
+Fri May  8 14:49:19 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 14:49:19 2020, optimalBlockdimCublasXt.cu(64) ERROR "CUBLASXT device selection error"
+Fri May  8 14:49:19 2020, optimalBlockdimCublasXt.cu(37) START SUCCESS
+Fri May  8 14:49:19 2020, optimalBlockdimCublasXt.cu(64) ERROR "CUBLASXT device selection error"
+Fri May  8 15:11:18 2020, optimalBlockdimCublasXt.cu(24) START SUCCESS
+Fri May  8 15:11:18 2020, optimalBlockdimCublasXt.cu(89) ERROR "CUBLASXT device selection error"
+Fri May  8 15:12:20 2020, optimalBlockdimCublasXt.cu(24) START SUCCESS
+Fri May  8 15:12:20 2020, optimalBlockdimCublasXt.cu(89) ERROR "CUBLASXT device selection error"
+Fri May  8 15:19:13 2020, optimalBlockdimCublasXt.cu(24) START SUCCESS
+Fri May  8 15:19:13 2020, optimalBlockdimCublasXt.cu(89) ERROR "CUBLASXT device selection error"
+Fri May  8 15:22:00 2020, optimalBlockdimCublasXt.cu(24) START SUCCESS
+Fri May  8 15:22:00 2020, optimalBlockdimCublasXt.cu(129) SUCCESS "Test finished succesfully"
+Fri May  8 15:24:49 2020, optimalBlockdimCublasXt.cu(24) START SUCCESS
+Fri May  8 15:24:49 2020, optimalBlockdimCublasXt.cu(125) SUCCESS "Test finished succesfully"
+Fri May  8 15:24:49 2020, optimalBlockdimCublasXt.cu(24) START SUCCESS
+Fri May  8 15:24:49 2020, optimalBlockdimCublasXt.cu(125) SUCCESS "Test finished succesfully"
