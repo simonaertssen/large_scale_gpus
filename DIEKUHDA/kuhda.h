@@ -62,14 +62,12 @@ Version: 1.0 13/03/2020
 #define MEM_ERR fprintf(stderr,"%s: failed to allocate memory\n",__func__)
 #define FAIL_ERR(x) fprintf(stderr,"%s: failure detected, error %d\n",__func__, x)
 #define gpuErrchk(ans)  gpuAssert((ans), __FILE__, __LINE__)
+#define GPUCHECK(ans)  gpuAssert((ans), __FILE__, __LINE__)
+#define CUBLASCHECK(ans)  cublasAssert((ans), __FILE__, __LINE__)
 #define INPUT_NULL_ERR fprintf(stderr,"%s: received NULL pointer as input\n",__func__)
 #define INPUT_ILL_ERR_D(x) fprintf(stderr,"%s: received illegal input %d\n",__func__, x)
 #define INPUT_ILL_ERR_LF(x) fprintf(stderr,"%s: received illegal input %lf\n",__func__, x)
 #define INPUT_ILL_ERR_LU(x) fprintf(stderr,"%s: received illegal input %u\n",__func__, x)
-
-// New definitions for error checks:
-void CUBLASCHECK(cublasStatus_t error);
-void GPUCHECK(const cudaError_t call);
 
 /* _____ _______ _____  _    _  _____ _______ _    _ _____  ______  _____
   / ____|__   __|  __ \| |  | |/ ____|__   __| |  | |  __ \|  ____|/ ____|
@@ -141,6 +139,8 @@ void *TileGPUAddToHost(unsigned long rowstart, unsigned long rowstop, unsigned l
 /* CUDA-specific */
 void kuhdaWarmup(int devicecount);
 cudaError_t gpuAssert(cudaError_t code, const char *file, int line);
+cublasStatus_t cublasAssert(cublasStatus_t error, const char *file, int line);
+
 
 /* Necessary computations*/
 // A timer to record the necessary computations when performing DGEMM

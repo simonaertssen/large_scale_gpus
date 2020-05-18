@@ -486,11 +486,22 @@ Arguments: code = cudafunction to be wrapped around, file and line = place where
 cudaError_t gpuAssert(cudaError_t code, const char *file, int line){
 	if (code != cudaSuccess){
 		fprintf(stderr, "GPUassert: error in file %s, line %d\n", file, line);
-  	fprintf(stderr,"code %d with reason %s\n", code, cudaGetErrorString(code));
-    exit(1);
+  		fprintf(stderr,"code %d with reason %s\n", code, cudaGetErrorString(code));
+    	exit(1);
    }
    return code;
 }
+
+// New definitions for error checks:
+cublasStatus_t cublasAssert(cublasStatus_t error, const char *file, int line){
+    if (error != CUBLAS_STATUS_SUCCESS){
+      fprintf(stderr, "CUBLASCHECK: error in file %s, line %d \n", file, line);
+      fprintf(stderr,"error code = %d\n", error);
+      exit(1);
+	}
+	return error;
+}
+
 
 void kuhdaWarmup(int devicecount){
 	// Sync current device
@@ -503,29 +514,6 @@ void kuhdaWarmup(int devicecount){
 		cudaDeviceSynchronize();
 	}
 }
-
-
-// New definitions for error checks:
-void CUBLASCHECK(cublasStatus_t error)
-{
-    if (error != CUBLAS_STATUS_SUCCESS)
-    {
-      fprintf(stderr, "CUBLASCHECK: error in file %s, line %d \n", __FILE__, __LINE__);
-      fprintf(stderr,"error code = %d\n", error);
-      exit(1);
-    }
-}
-
-void GPUCHECK(const cudaError_t call)
-{
-    if (call != cudaSuccess)
-    {
-      fprintf(stderr, "GPUCHECK: error in file %s, line %d \n", __FILE__, __LINE__);
-      fprintf(stderr,"error code = %d with reason %s\n", call, cudaGetErrorString(call));
-      exit(1);
-    }
-}
-
 
 
 
