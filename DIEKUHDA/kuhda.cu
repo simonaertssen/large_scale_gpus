@@ -511,6 +511,7 @@ void kuhdaWarmup(int devicecount){
 		GPUCHECK(cudaSetDevice(device));
 		int *testint = 0;
 		GPUCHECK(cudaMalloc((void**)&testint,sizeof(int)));
+		GPUCHECK(cudaFree(testint));
 		cudaDeviceSynchronize();
 	}
 }
