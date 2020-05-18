@@ -344,7 +344,7 @@ void kuhdaTestForValue(matrix *A, double value){
 			}
 		}
 	}
-	if (result == 0) printf("%s tested correctly for value %lf", __func__, value);
+	if (result == 0) printf("%s tested correctly for value %.2lf\n", __func__, value);
 }
 
 void kuhdaFillDiagonalWithValue(matrix *A, double value){
@@ -361,7 +361,7 @@ void kuhdaTestDiagonalForValue(matrix *A, double value){
 			result = -1;
 		}
 	}
-	if (result == 0) printf("%s tested correctly for value %lf", __func__, value);
+	if (result == 0) printf("%s tested correctly for value %.2lf\n", __func__, value);
 }
 
 /********************************************/

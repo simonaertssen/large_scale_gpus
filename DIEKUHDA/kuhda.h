@@ -206,33 +206,34 @@ struct MatMulTimer
 struct Timer
 {
 	Timer() {
-    cudaStreamCreate(&stream);
+    	cudaStreamCreate(&stream);
 		cudaEventCreate(&start);
 		cudaEventCreate(&stop);
 	}
 
 	~Timer() {
-    cudaStreamDestroy(stream);
+    	cudaStreamDestroy(stream);
 		cudaEventDestroy(start);
 		cudaEventDestroy(stop);
 	}
 
 	void Start() {
+		elapsedtime = 0.f;
 		cudaEventRecord(start, stream);
 	}
 
 	float Stop() {
 		cudaEventRecord(stop, stream);
-    cudaEventSynchronize(stop);
-    float elapsedtime;
+    	cudaEventSynchronize(stop);
 		cudaEventElapsedTime(&elapsedtime, start, stop);
-    return elapsedtime;
+    	return elapsedtime;
 	}
 
 	private :
 		cudaEvent_t start;
 		cudaEvent_t stop;
-    cudaStream_t stream;
+    	cudaStream_t stream;
+		float elapsedtime;
 };
 
 int kuhdamm(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, cudaStream_t stream, int verbose);
