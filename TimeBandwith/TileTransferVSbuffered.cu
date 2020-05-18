@@ -24,6 +24,8 @@ int main() {
   int verbose = 0, rep, reps = 5;
   int i, j;
 
+  printf("Timing the tiling operations for average of %d reps for matrix size n = %d\n", reps, n);
+
   Timer timer;
   timer.Start();
   kuhdaWarmup(4);
@@ -107,7 +109,7 @@ int main() {
         }
       }
     }
-    
+
     #pragma omp parallel for private(device) num_threads(NUMTHREADS)
     for (device = 0; device < devicecount; device++){
       GPUCHECK(cudaSetDevice(device));
@@ -169,6 +171,7 @@ int main() {
   printf("Tiled D2H took %f ms\n", results/reps);
 
   kuhdaTestForValue(h_A, 2.0, verbose);
+
 
   // Time the destruction loop
   timer.Start();
