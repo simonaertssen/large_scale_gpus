@@ -339,7 +339,7 @@ void kuhdaTestForValue(matrix *A, double value, int verbose){
 	for (i = 0; i < A->r; ++i){
 		for (j = 0; j < A->c; ++j){
 			if (A->data[i*A->c + j] != value){
-				fprintf(stderr,"%s: encountered wrong value %.2lf at (%zu,%zu)\n",__func__, A->data[i*A->c + j], i, j);
+				fprintf(stderr,"%s: encountered wrong value %.2lf instead of %.2lf at (%zu,%zu)\n",__func__, A->data[i*A->c + j], value, i, j);
 				result = -1;
 				return;
 			}
@@ -358,7 +358,7 @@ void kuhdaTestDiagonalForValue(matrix *A, double value, int verbose){
 	int result = 0;
 	for (i = 0; i < A->r*A->c; i += A->c + 1){
 		if (A->data[i] != value){
-			fprintf(stderr,"%s: encountered wrong value %.2lf at (%zu,%zu)\n",__func__, i, i);
+			fprintf(stderr,"%s: encountered wrong value %.2lf instead of %.2lf at (%zu,%zu)\n",__func__, A->data[i], value, i, i);
 			result = -1;
 			return;
 		}
@@ -387,10 +387,13 @@ void *TileHostToGPU(unsigned long rowstart, unsigned long rowstop, unsigned long
 	cudaError_t failure;
 
 	// allocate space (size of a single tile row) on the host:
-	double *memacc = (double*)malloc(cols*sizeof(double));
+	//double *memacc = (double*)malloc(cols*sizeof(double));
+	double *memacc = NULL;
+	GPUCHECK(cudaMallocHost((void**)&memacc, cols*sizeof(double)));
 	if (memacc == NULL){
 		MEM_ERR;
-		free(memacc);
+		//free(memacc);
+		cudaFreeHost(memacc);
 		return 0;
 	}
 
@@ -410,6 +413,7 @@ void *TileHostToGPU(unsigned long rowstart, unsigned long rowstop, unsigned long
 			cudaFree(d_tile);
 			}
 	}
+	cudaFreeHost(memacc);
 	return 0;
 }
 
@@ -429,10 +433,13 @@ void *TileGPUToHost(unsigned long rowstart, unsigned long rowstop, unsigned long
 	unsigned long cols = colstop - colstart, i, j;
 	cudaError_t failure;
 
-	double *memacc = (double*)malloc(cols*sizeof(double));
+	//double *memacc = (double*)malloc(cols*sizeof(double));
+	double *memacc = NULL;
+	GPUCHECK(cudaMallocHost((void**) &memacc, cols*sizeof(double)));
 	if (memacc == NULL){
 		MEM_ERR;
-		free(memacc);
+		//free(memacc);
+		cudaFreeHost(memacc);
 		return 0;
 	}
 
@@ -450,7 +457,7 @@ void *TileGPUToHost(unsigned long rowstart, unsigned long rowstop, unsigned long
 			cudaFree(d_tile);
 		}
 	}
-	// printf("Tile copied successfully.\n");
+	cudaFreeHost(memacc);
 	return 0;
 }
 
@@ -470,10 +477,14 @@ void *TileGPUAddToHost(unsigned long rowstart, unsigned long rowstop, unsigned l
 	unsigned long cols = colstop - colstart, i, j;
 	cudaError_t failure;
 
-	double *memacc = (double*)malloc(cols*sizeof(double));
+	//double *memacc = (double*)malloc(cols*sizeof(double));
+	double *memacc = NULL;
+	GPUCHECK(cudaMallocHost(&memacc, cols*sizeof(double)));
+
 	if (memacc == NULL){
 		MEM_ERR;
-		free(memacc);
+		//free(memacc);
+		cudaFreeHost(memacc);
 		return 0;
 	}
 
@@ -491,7 +502,7 @@ void *TileGPUAddToHost(unsigned long rowstart, unsigned long rowstop, unsigned l
 			cudaFree(d_tile);
 		}
 	}
-	// printf("Tile copied successfully.\n");
+	cudaFreeHost(memacc);
 	return 0;
 }
 
