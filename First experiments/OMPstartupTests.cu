@@ -15,7 +15,7 @@ Here we will investigate which OMP approach is the fastest when performing loops
 
 int main() {
 
-  int n = 10000, tiledim = n/2, tilesize = tiledim*tiledim*sizeof(double);
+  int n = 18000, tiledim = n/2, tilesize = tiledim*tiledim*sizeof(double);
   int device, devicecount = 4;
 
   Timer timer;

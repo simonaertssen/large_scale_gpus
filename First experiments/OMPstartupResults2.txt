@@ -1,0 +1,6 @@
+Warmup took 424.168396 ms
+Timing the (de)allocation loops for n = 18000
+Simple allocation took  1866.216553 ms
+Simple destruction took 518.305847 ms
+Prllel allocation took  1370.058594 ms
+Prllel destruction took 503.896423 ms
