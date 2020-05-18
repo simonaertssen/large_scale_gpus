@@ -15,7 +15,7 @@ Here we will investigate which OMP approach is the fastest when performing loops
 
 int main() {
 
-  int n = 10000, tiledim = n/2, tilesize = tiledim*tiledim*sizeof(double);
+  int n = 10, tiledim = n/2, tilesize = tiledim*tiledim*sizeof(double);
   int device, devicecount = 4;
   int i, j;
 
@@ -26,7 +26,7 @@ int main() {
   printf("Warmup took %f ms\n", elapsedtime);
 
   // Containers for host and device matrices
-  matrix *h_A  = kuhdaMallocMP1(n, n), *d_A[devicecount];
+  matrix *h_A = kuhdaMallocMP1(n, n), *d_A[devicecount];
   //double *test = (double*) malloc(tilesize);
   double *hostbuffer[devicecount], *hostbuffer_singlerow[devicecount];
 
@@ -107,7 +107,6 @@ int main() {
 
  */
 
-
   // Time the tiling operation:
   printf("Timing the tiling operations\n");
   #pragma omp parallel for private(device) num_threads(NUMTHREADS)
@@ -123,6 +122,7 @@ int main() {
       }
   }
 
+  kuhdaFillWithValue(h_A, 1.0);
   timer.Start();
   for (device = 0; device < devicecount; device++){
     GPUCHECK(cudaSetDevice(device));
@@ -133,7 +133,39 @@ int main() {
     GPUCHECK(cudaStreamSynchronize(d_streams[device*streamsperdevice]));
   }
   elapsedtime = timer.Stop();
-  printf("Simple tile transfer took %f ms\n", elapsedtime);
+  printf("Simple tile transfer H2D took %f ms\n", elapsedtime);
+
+  kuhdaFillWithValue(h_A, 0.0);
+
+  timer.Start();
+  for (device = 0; device < devicecount; device++){
+    GPUCHECK(cudaSetDevice(device));
+    TileGPUToHost(0, tiledim, 0, tiledim, d_A[device], h_A, d_streams[device*streamsperdevice]);
+  }
+  for (device = 0; device < devicecount; device++){
+    GPUCHECK(cudaSetDevice(device));
+    GPUCHECK(cudaStreamSynchronize(d_streams[device*streamsperdevice]));
+  }
+  elapsedtime = timer.Stop();
+  printf("Simple tile transfer D2H took %f ms\n", elapsedtime);
+  kuhdaTestForValue(h_A, 1.0);
+
+  kuhdaFillWithValue(h_A, 2.0);
+  timer.Start();
+  #pragma omp parallel for private(device) num_threads(NUMTHREADS)
+  for (device = 0; device < devicecount; device++){
+    GPUCHECK(cudaSetDevice(device));
+    TileHostToGPU(0, tiledim, 0, tiledim, h_A, d_A[device], d_streams[device*streamsperdevice]);
+  }
+  #pragma omp parallel for private(device) num_threads(NUMTHREADS)
+  for (device = 0; device < devicecount; device++){
+    GPUCHECK(cudaSetDevice(device));
+    GPUCHECK(cudaStreamSynchronize(d_streams[device*streamsperdevice]));
+  }
+  elapsedtime = timer.Stop();
+  printf("Parallel tile transfer H2D took %f ms\n", elapsedtime);
+
+  kuhdaFillWithValue(h_A, 0.0);
 
   timer.Start();
   #pragma omp parallel for private(device) num_threads(NUMTHREADS)
@@ -147,10 +179,12 @@ int main() {
     GPUCHECK(cudaStreamSynchronize(d_streams[device*streamsperdevice]));
   }
   elapsedtime = timer.Stop();
-  printf("Parallel tile transfer took %f ms\n", elapsedtime);
+  printf("Parallel tile transfer D2H took %f ms\n", elapsedtime);
+  kuhdaTestForValue(h_A, 2.0);
 
+  kuhdaFillWithValue(h_A, -5.0);
   timer.Start();
-  #pragma omp parallel for private(device) num_threads(NUMTHREADS)
+  //#pragma omp parallel for private(device) num_threads(NUMTHREADS)
   for (device = 0; device < devicecount; device++){
     GPUCHECK(cudaSetDevice(device));
     for (i = 0; i < tiledim; ++i){
@@ -159,15 +193,39 @@ int main() {
     }
   }
 
-  #pragma omp parallel for private(device) num_threads(NUMTHREADS)
+  //#pragma omp parallel for private(device) num_threads(NUMTHREADS)
   for (device = 0; device < devicecount; device++){
     GPUCHECK(cudaSetDevice(device));
     GPUCHECK(cudaStreamSynchronize(d_streams[device*streamsperdevice + 0]));
     GPUCHECK(cudaStreamSynchronize(d_streams[device*streamsperdevice + 1]));
   }
   elapsedtime = timer.Stop();
-  printf("Fast parallel tile transfer took %f ms\n", elapsedtime);
+  printf("Fast parallel tile transfer H2D took %f ms\n", elapsedtime);
 
+  kuhdaFillWithValue(h_A, 0.0);
+
+  timer.Start();
+  //#pragma omp parallel for private(device) num_threads(NUMTHREADS)
+  for (device = 0; device < devicecount; device++){
+    GPUCHECK(cudaSetDevice(device));
+    for (i = 0; i < tiledim; ++i){
+      GPUCHECK(cudaMemcpyAsync((void*)hostbuffer_singlerow[device], (void*)(&d_A[device]->data[0] + tiledim * i), tiledim*sizeof(double), cudaMemcpyDeviceToHost, d_streams[device*streamsperdevice + (int)(i%streamsperdevice)]));
+      for (j = 0; j < tiledim; ++j) h_A->data[i * h_A->c + j] += hostbuffer_singlerow[device][j];
+    }
+  }
+
+  //#pragma omp parallel for private(device) num_threads(NUMTHREADS)
+  for (device = 0; device < devicecount; device++){
+    GPUCHECK(cudaSetDevice(device));
+    GPUCHECK(cudaStreamSynchronize(d_streams[device*streamsperdevice + 0]));
+    GPUCHECK(cudaStreamSynchronize(d_streams[device*streamsperdevice + 1]));
+  }
+  elapsedtime = timer.Stop();
+  printf("Fast parallel tile transfer D2H took %f ms\n", elapsedtime);
+  //kuhdaTestForValue(h_A, -5.0);
+
+
+  printf("Final deallocation\n");
   kuhdaFreeM(h_A, 'p');
   #pragma omp parallel for private(device) num_threads(NUMTHREADS)
   for (device = 0; device < devicecount; device++){

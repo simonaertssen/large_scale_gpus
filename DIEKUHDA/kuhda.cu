@@ -323,6 +323,47 @@ matrix *kuhdaMallocMdiagP(unsigned long r, unsigned long c){
 }
 
 
+// Fill and test with value
+void kuhdaFillWithValue(matrix *A, double value){
+	unsigned long i, j;
+	for (i = 0; i < A->r; ++i){
+		for (j = 0; j < A->c; ++j){
+			A->data[i*A->c + j] = value;
+		}
+	}
+}
+
+void kuhdaTestForValue(matrix *A, double value){
+	unsigned long i, j;
+	int result = 0;
+	for (i = 0; i < A->r; ++i){
+		for (j = 0; j < A->c; ++j){
+			if (A->data[i*A->c + j] != value){
+				fprintf(stderr,"%s: encountered wrong value %lf at (%zu,%zu)\n",__func__, A->data[i*A->c + j], i, j);
+				result = -1;
+			}
+		}
+	}
+	if (result == 0) printf("%s tested correctly for value %lf", __func__, value);
+}
+
+void kuhdaFillDiagonalWithValue(matrix *A, double value){
+	unsigned long i;
+	for (i = 0; i < A->r*A->c; i += A->c + 1) A->data[i] = value;
+}
+
+void kuhdaTestDiagonalForValue(matrix *A, double value){
+	unsigned long i;
+	int result = 0;
+	for (i = 0; i < A->r*A->c; i += A->c + 1){
+		if (A->data[i] != value){
+			fprintf(stderr,"%s: encountered wrong value %lf at (%zu,%zu)\n",__func__, i, i);
+			result = -1;
+		}
+	}
+	if (result == 0) printf("%s tested correctly for value %lf", __func__, value);
+}
+
 /********************************************/
 /* 				 Data transfers 			*/
 /********************************************/
