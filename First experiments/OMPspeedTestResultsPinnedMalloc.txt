@@ -1,0 +1,9 @@
+Warmup took 456.931000 ms
+Timing the tiling operations for average of 5 reps for matrix size n = 10000
+Simple tile transfer H2D took 1037.395508 ms
+Simple tile transfer D2H took 489.105225 ms
+Parall tile transfer H2D took 104.335861 ms
+Parall tile transfer H2D took 134.515228 ms
+Fast   tile transfer H2D took 169.462265 ms
+Fast   tile transfer D2H took 159.874420 ms
+Final deallocation
