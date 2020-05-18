@@ -121,9 +121,9 @@ matrix *kuhdaMallocDeviceM(unsigned long r, unsigned long c);
 
 // Filling and checking:
 void kuhdaFillWithValue(matrix *A, double value);
-void kuhdaTestForValue(matrix *A, double value);
+void kuhdaTestForValue(matrix *A, double value, int verbose);
 void kuhdaFillDiagonalWithValue(matrix *A, double value);
-void kuhdaTestDiagonalForValue(matrix *A, double value);
+void kuhdaTestDiagonalForValue(matrix *A, double value, int verbose);
 
 /* Printing */
 void kuhdaPrintV(vector *freethisvector);

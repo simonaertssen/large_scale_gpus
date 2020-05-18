@@ -333,7 +333,7 @@ void kuhdaFillWithValue(matrix *A, double value){
 	}
 }
 
-void kuhdaTestForValue(matrix *A, double value){
+void kuhdaTestForValue(matrix *A, double value, int verbose){
 	unsigned long i, j;
 	int result = 0;
 	for (i = 0; i < A->r; ++i){
@@ -344,7 +344,7 @@ void kuhdaTestForValue(matrix *A, double value){
 			}
 		}
 	}
-	if (result == 0) printf("%s tested correctly for value %.2lf\n", __func__, value);
+	if (result == 0 && verbose == 1) printf("%s tested correctly for value %.2lf\n", __func__, value);
 }
 
 void kuhdaFillDiagonalWithValue(matrix *A, double value){
@@ -352,7 +352,7 @@ void kuhdaFillDiagonalWithValue(matrix *A, double value){
 	for (i = 0; i < A->r*A->c; i += A->c + 1) A->data[i] = value;
 }
 
-void kuhdaTestDiagonalForValue(matrix *A, double value){
+void kuhdaTestDiagonalForValue(matrix *A, double value, int verbose){
 	unsigned long i;
 	int result = 0;
 	for (i = 0; i < A->r*A->c; i += A->c + 1){
@@ -361,7 +361,7 @@ void kuhdaTestDiagonalForValue(matrix *A, double value){
 			result = -1;
 		}
 	}
-	if (result == 0) printf("%s tested correctly for value %.2lf\n", __func__, value);
+	if (result == 0 && verbose == 1) printf("%s tested correctly for value %.2lf\n", __func__, value);
 }
 
 /********************************************/
