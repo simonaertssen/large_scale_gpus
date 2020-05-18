@@ -375,7 +375,7 @@ TileHostToGPU: memcopy tile of host matrix to device.
 Arguments: dimensions / location of tile to be copied, pointers to hostmatrix & device-tile, streams
 Return value: none
 */
-void *TileHostToGPU(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *h_matrix, matrix *d_tile, cudaStream_t stream)
+void TileHostToGPU(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *h_matrix, matrix *d_tile, cudaStream_t stream)
 {
 	if (h_matrix == NULL || d_tile == NULL) 	INPUT_NULL_ERR;
 	if (rowstart > rowstop) INPUT_ILL_ERR_LU(rowstop);
@@ -394,7 +394,7 @@ void *TileHostToGPU(unsigned long rowstart, unsigned long rowstop, unsigned long
 		MEM_ERR;
 		//free(memacc);
 		cudaFreeHost(memacc);
-		return 0;
+		return;
 	}
 
 	// 'strided' copy, row by row
@@ -414,15 +414,16 @@ void *TileHostToGPU(unsigned long rowstart, unsigned long rowstop, unsigned long
 			}
 	}
 	cudaFreeHost(memacc);
-	return 0;
+	return;
 }
+
 
 /*
 TileGPUToHost: memcopy tile of device matrix to host.
 Arguments: dimensions / location of tile to be copied, pointers to hostmatrix & device-tile, streams
 Return value: none
 */
-void *TileGPUToHost(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *d_tile, matrix *h_matrix, cudaStream_t stream)
+void TileGPUToHost(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *d_tile, matrix *h_matrix, cudaStream_t stream)
 {
 	if (h_matrix == NULL || d_tile == NULL) 	INPUT_NULL_ERR;
 	if (rowstart > rowstop) INPUT_ILL_ERR_LU(rowstop);
@@ -440,7 +441,7 @@ void *TileGPUToHost(unsigned long rowstart, unsigned long rowstop, unsigned long
 		MEM_ERR;
 		//free(memacc);
 		cudaFreeHost(memacc);
-		return 0;
+		return;
 	}
 
 	// 'strided' copy, row by row
@@ -458,7 +459,7 @@ void *TileGPUToHost(unsigned long rowstart, unsigned long rowstop, unsigned long
 		}
 	}
 	cudaFreeHost(memacc);
-	return 0;
+	return;
 }
 
 /*
@@ -466,7 +467,7 @@ TileGPUAddToHost: memcopy tile of device matrix to host.
 Arguments: dimensions / location of tile to be copied, pointers to hostmatrix & device-tile, streams
 Return value: none
 */
-void *TileGPUAddToHost(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *d_tile, matrix *h_matrix, cudaStream_t stream)
+void TileGPUAddToHost(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *d_tile, matrix *h_matrix, cudaStream_t stream)
 {
 	if (h_matrix == NULL || d_tile == NULL) 	INPUT_NULL_ERR;
 	if (rowstart > rowstop) INPUT_ILL_ERR_LU(rowstop);
@@ -485,7 +486,7 @@ void *TileGPUAddToHost(unsigned long rowstart, unsigned long rowstop, unsigned l
 		MEM_ERR;
 		//free(memacc);
 		cudaFreeHost(memacc);
-		return 0;
+		return;
 	}
 
 	// 'strided' copy, row by row
@@ -503,7 +504,7 @@ void *TileGPUAddToHost(unsigned long rowstart, unsigned long rowstop, unsigned l
 		}
 	}
 	cudaFreeHost(memacc);
-	return 0;
+	return;
 }
 
 
