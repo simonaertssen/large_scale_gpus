@@ -339,7 +339,7 @@ void kuhdaTestForValue(matrix *A, double value, int verbose){
 	for (i = 0; i < A->r; ++i){
 		for (j = 0; j < A->c; ++j){
 			if (A->data[i*A->c + j] != value){
-				fprintf(stderr,"%s: encountered wrong value %lf at (%zu,%zu)\n",__func__, A->data[i*A->c + j], i, j);
+				fprintf(stderr,"%s: encountered wrong value %.2lf at (%zu,%zu)\n",__func__, A->data[i*A->c + j], i, j);
 				result = -1;
 				return;
 			}
@@ -358,7 +358,7 @@ void kuhdaTestDiagonalForValue(matrix *A, double value, int verbose){
 	int result = 0;
 	for (i = 0; i < A->r*A->c; i += A->c + 1){
 		if (A->data[i] != value){
-			fprintf(stderr,"%s: encountered wrong value %lf at (%zu,%zu)\n",__func__, i, i);
+			fprintf(stderr,"%s: encountered wrong value %.2lf at (%zu,%zu)\n",__func__, i, i);
 			result = -1;
 			return;
 		}
