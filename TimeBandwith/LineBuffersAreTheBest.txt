@@ -1,8 +1,8 @@
 Timing the tiling operations for average of 5 reps for matrix size n = 10000
-Warmup took 400.159485 ms
-Allocation took 547.369202 ms
-Naive H2D took 316.058014 ms
-Naive D2H took 255.641754 ms
-Tiled H2D took 52.451283 ms
-Tiled D2H took 48.372673 ms
-Destruction took 6.471104 ms
+Warmup took 571.940552 ms
+Allocation took 569.645203 ms
+Naive H2D took 249.016846 ms
+Naive D2H took 236.841156 ms
+Tiled H2D took 43.264252 ms
+Tiled D2H took 53.615875 ms
+Destruction took 6.739744 ms

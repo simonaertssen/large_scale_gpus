@@ -19,7 +19,7 @@ void checkMatrixIsRows(matrix *A);
 
 int main() {
 
-  int n = 10000, tiledim = n/2, tilesize = tiledim*tiledim*sizeof(double);
+  int n = 24000, tiledim = n/2, tilesize = tiledim*tiledim*sizeof(double);
   int device, devicecount = 4;
   int verbose = 0, rep, reps = 5;
   int i, j;
