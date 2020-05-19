@@ -1,13 +1,13 @@
 #include "kuhda.h"
 /*
-$$$$$$$\  $$$$$$\ $$$$$$$$\ $$\   $$\ $$\   $$\ $$\   $$\ $$$$$$$\   $$$$$$\      $$$$$$\
-$$  __$$\ \_$$  _|$$  _____|$$ | $$  |$$ |  $$ |$$ |  $$ |$$  __$$\ $$  __$$\    $$  __$$\
-$$ |  $$ |  $$ |  $$ |      $$ |$$  / $$ |  $$ |$$ |  $$ |$$ |  $$ |$$ /  $$ |   $$ /  \__|
-$$ |  $$ |  $$ |  $$$$$\    $$$$$  /  $$ |  $$ |$$$$$$$$ |$$ |  $$ |$$$$$$$$ |   $$ |
-$$ |  $$ |  $$ |  $$  __|   $$  $$<   $$ |  $$ |$$  __$$ |$$ |  $$ |$$  __$$ |   $$ |
-$$ |  $$ |  $$ |  $$ |      $$ |\$$\  $$ |  $$ |$$ |  $$ |$$ |  $$ |$$ |  $$ |   $$ |  $$\
-$$$$$$$  |$$$$$$\ $$$$$$$$\ $$ | \$$\ \$$$$$$  |$$ |  $$ |$$$$$$$  |$$ |  $$ |$$\\$$$$$$  |
-\_______/ \______|\________|\__|  \__| \______/ \__|  \__|\_______/ \__|  \__|\__|\______/
+$$$$$$$\  $$$$$$\ $$$$$$$$\ $$\   $$\ $$\   $$\ $$\   $$\ $$$$$$$\   $$$$$$\      $$$$$$\   $$\   $$\ 
+$$  __$$\ \_$$  _|$$  _____|$$ | $$  |$$ |  $$ |$$ |  $$ |$$  __$$\ $$  __$$\    $$  __$$\  $$ |  $$ |
+$$ |  $$ |  $$ |  $$ |      $$ |$$  / $$ |  $$ |$$ |  $$ |$$ |  $$ |$$ /  $$ |   $$ /  \__| $$ |  $$ |
+$$ |  $$ |  $$ |  $$$$$\    $$$$$  /  $$ |  $$ |$$$$$$$$ |$$ |  $$ |$$$$$$$$ |   $$ |		$$ |  $$ |
+$$ |  $$ |  $$ |  $$  __|   $$  $$<   $$ |  $$ |$$  __$$ |$$ |  $$ |$$  __$$ |   $$ |		$$ |  $$ |
+$$ |  $$ |  $$ |  $$ |      $$ |\$$\  $$ |  $$ |$$ |  $$ |$$ |  $$ |$$ |  $$ |   $$ |  $$\	$$ |  $$ |
+$$$$$$$  |$$$$$$\ $$$$$$$$\ $$ | \$$\ \$$$$$$  |$$ |  $$ |$$$$$$$  |$$ |  $$ |$$\\$$$$$$  |	\$$$$$$  |
+\_______/ \______|\________|\__|  \__| \______/ \__|  \__|\_______/ \__|  \__|\__|\______/	 \______/
 
 Help: see https://docs.nvidia.com/cuda/cublas/index.html for specific help when using cuda */
 
@@ -19,7 +19,7 @@ Help: see https://docs.nvidia.com/cuda/cublas/index.html for specific help when 
 #include <omp.h>
 
 /********************************************/
-/* Allocation/deallocation on the HOST			*/
+/* Allocation/deallocation on the HOST		*/
 /********************************************/
 
 /* kuhdaMallocV(unsigned long r): Allocates memory for a vector of length r
@@ -300,7 +300,7 @@ matrix *kuhdaMallocMP(unsigned long r, unsigned long c){
 	return out;
 }
 
-/* PINNED allocation for [r * c] matrix of onesss */
+/* PINNED allocation for [r * c] matrix of ones */
 matrix *kuhdaMallocMP1(unsigned long r, unsigned long c){
 	matrix *out = kuhdaMallocMP(r, c);
 	unsigned long i, j;
@@ -371,12 +371,13 @@ void kuhdaTestDiagonalForValue(matrix *A, double value, int verbose){
 /********************************************/
 
 /*
-TileHostToGPU: memcopy tile of host matrix to device.
+TileHostToGPU: memcopy tile of host matrix to device asynchronously.
 Arguments: dimensions / location of tile to be copied, pointers to hostmatrix & device-tile, streams
 Return value: none
 */
 void TileHostToGPU(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *h_matrix, matrix *d_tile, cudaStream_t stream)
-{
+{	
+	// check input
 	if (h_matrix == NULL || d_tile == NULL) 	INPUT_NULL_ERR;
 	if (rowstart > rowstop) INPUT_ILL_ERR_LU(rowstop);
 	if (colstart > colstop)	INPUT_ILL_ERR_LU(colstop);
@@ -419,15 +420,17 @@ void TileHostToGPU(unsigned long rowstart, unsigned long rowstop, unsigned long 
 
 
 /*
-TileGPUToHost: memcopy tile of device matrix to host.
+TileGPUToHost: memcopy tile of device matrix to host asynchronously.
 Arguments: dimensions / location of tile to be copied, pointers to hostmatrix & device-tile, streams
 Return value: none
 */
 void TileGPUToHost(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *d_tile, matrix *h_matrix, cudaStream_t stream)
 {
+	// check input
 	if (h_matrix == NULL || d_tile == NULL) 	INPUT_NULL_ERR;
 	if (rowstart > rowstop) INPUT_ILL_ERR_LU(rowstop);
 	if (colstart > colstop)	INPUT_ILL_ERR_LU(colstop);
+	if (h_matrix->r <= 0 || h_matrix->c <= 0 || d_tile->r <= 0 || d_tile->c <= 0) INPUT_ILL_ERR_LU(h_matrix->r);
 	if (stream == NULL) INPUT_NULL_ERR;
 
 
@@ -463,15 +466,17 @@ void TileGPUToHost(unsigned long rowstart, unsigned long rowstop, unsigned long 
 }
 
 /*
-TileGPUAddToHost: memcopy tile of device matrix to host.
+TileGPUAddToHost: memcopy and add tile of device matrix to host.
 Arguments: dimensions / location of tile to be copied, pointers to hostmatrix & device-tile, streams
 Return value: none
 */
 void TileGPUAddToHost(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *d_tile, matrix *h_matrix, cudaStream_t stream)
 {
+	// check input
 	if (h_matrix == NULL || d_tile == NULL) 	INPUT_NULL_ERR;
 	if (rowstart > rowstop) INPUT_ILL_ERR_LU(rowstop);
 	if (colstart > colstop)	INPUT_ILL_ERR_LU(colstop);
+	if (h_matrix->r <= 0 || h_matrix->c <= 0 || d_tile->r <= 0 || d_tile->c <= 0) INPUT_ILL_ERR_LU(h_matrix->r);
 	if (stream == NULL) INPUT_NULL_ERR;
 
 
@@ -509,32 +514,9 @@ void TileGPUAddToHost(unsigned long rowstart, unsigned long rowstop, unsigned lo
 
 
 
-void kuhdaMatrixToHost(unsigned long rows, unsigned long cols, matrix *d_matrix, matrix *h_matrix){
-	if (h_matrix == NULL || d_matrix == NULL){
-			INPUT_NULL_ERR;
-	}
-	//int failure = cublasGetMatrix(rows, cols, sizeof(double), d_matrix->data, d_matrix->r, h_matrix->data, h_matrix->r);
-	//int failure = cudaMemcpy2D(h_matrix->data, d_matrix->data, rows*cols*sizeof(double), cudaMemcpyDeviceToHost);
-	cudaError_t failure = gpuErrchk(cudaMemcpy(h_matrix->data, d_matrix->data, rows*cols*sizeof(double), cudaMemcpyDeviceToHost));
-	if (failure != 0){
-		FAIL_ERR(failure);
-	}
-}
-
-
-void kuhdaTileToHost(unsigned long rows, unsigned long cols, double *d_tile, matrix *h_matrix){
-	if (h_matrix == NULL || d_tile == NULL) INPUT_NULL_ERR;
-	if (rows != h_matrix->r) INPUT_ILL_ERR_LU(rows);
-	if (cols != h_matrix->c) INPUT_ILL_ERR_LU(cols);
-
-	//int failure = cublasGetMatrix(rows, cols, sizeof(double), d_matrix->data, d_matrix->r, h_matrix->data, h_matrix->r);
-	//int failure = cudaMemcpy2D(h_matrix->data, d_matrix->data, rows*cols*sizeof(double), cudaMemcpyDeviceToHost);
-	cudaError_t failure = gpuErrchk(cudaMemcpy(h_matrix->data, d_tile, rows*cols*sizeof(double), cudaMemcpyDeviceToHost));
-	if (failure != 0){
-		FAIL_ERR(failure);
-	}
-}
-
+/****************************************/
+/* 				Utilities				*/
+/****************************************/
 
 /*gpuAssert(cudaError_t code, const char *file, int line): check for cuda errors.
 Arguments: code = cudafunction to be wrapped around, file and line = place where the error occured */
@@ -558,6 +540,7 @@ cublasStatus_t cublasAssert(cublasStatus_t error, const char *file, int line){
 }
 
 
+// GPU warmup function for timing experiments
 void kuhdaWarmup(int devicecount){
 	// Sync current device
 	cudaDeviceSynchronize();
@@ -776,6 +759,32 @@ double *kuhdaTileToGPU(unsigned long rowstart, unsigned long rowstop, unsigned l
 	return d_tile;
 }
 
+
+void kuhdaMatrixToHost(unsigned long rows, unsigned long cols, matrix *d_matrix, matrix *h_matrix){
+	if (h_matrix == NULL || d_matrix == NULL){
+			INPUT_NULL_ERR;
+	}
+	//int failure = cublasGetMatrix(rows, cols, sizeof(double), d_matrix->data, d_matrix->r, h_matrix->data, h_matrix->r);
+	//int failure = cudaMemcpy2D(h_matrix->data, d_matrix->data, rows*cols*sizeof(double), cudaMemcpyDeviceToHost);
+	cudaError_t failure = gpuErrchk(cudaMemcpy(h_matrix->data, d_matrix->data, rows*cols*sizeof(double), cudaMemcpyDeviceToHost));
+	if (failure != 0){
+		FAIL_ERR(failure);
+	}
+}
+
+
+void kuhdaTileToHost(unsigned long rows, unsigned long cols, double *d_tile, matrix *h_matrix){
+	if (h_matrix == NULL || d_tile == NULL) INPUT_NULL_ERR;
+	if (rows != h_matrix->r) INPUT_ILL_ERR_LU(rows);
+	if (cols != h_matrix->c) INPUT_ILL_ERR_LU(cols);
+
+	//int failure = cublasGetMatrix(rows, cols, sizeof(double), d_matrix->data, d_matrix->r, h_matrix->data, h_matrix->r);
+	//int failure = cudaMemcpy2D(h_matrix->data, d_matrix->data, rows*cols*sizeof(double), cudaMemcpyDeviceToHost);
+	cudaError_t failure = gpuErrchk(cudaMemcpy(h_matrix->data, d_tile, rows*cols*sizeof(double), cudaMemcpyDeviceToHost));
+	if (failure != 0){
+		FAIL_ERR(failure);
+	}
+}
 
 /********************************************/
 /* 				cuda-specific		  		*/
