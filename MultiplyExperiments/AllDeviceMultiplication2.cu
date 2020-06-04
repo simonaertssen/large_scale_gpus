@@ -69,7 +69,7 @@ int main(int argc, char* argv[]) {
 
     int streamcount = streamsperdevice*devicecount;
     int Q; // register quotient of n/x
-    size_t availableMemory, queryMemory = (size_t) 3*x*x*sizeof(double), GBconv = 1000*1000*1000;
+    size_t availableMemory, queryMemory = (size_t) 3*x*x*sizeof(double), GBconv = 1024*1024*1024;
     cudaStream_t d_streams[streamcount];
     cublasHandle_t handles[devicecount];
     double *membuffs[devicecount][ABC];
