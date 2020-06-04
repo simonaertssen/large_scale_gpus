@@ -583,7 +583,6 @@ void kuhdaWarmup(int devicecount){
 
 void kuhdaWarmupDevice(int device){
 	// Sync current device
-	GPUCHECK(cudaDeviceSynchronize());
 	GPUCHECK(cudaSetDevice(device));
 	// Allocate space for a dummy int
 	int *testint = 0;

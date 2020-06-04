@@ -45,6 +45,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
+
 	// Containers for host and device matrices
 	matrix *h_A  = kuhdaMallocM1(n, n); // diagonal A matrix
 	matrix *h_B  = kuhdaMallocM1(n, n); // diagonal B matrix
@@ -53,6 +54,10 @@ int main(int argc, char* argv[]) {
     int abc, ABC = 3; // counters to loop through matrices
     int device, devicecount = 4;
     int stream, streamsperdevice = 20; //(n/x)*(n/x);
+
+    // parallel device warmup
+    #pragma omp parallel for private(device) num_threads(devicecount)
+    for (device = 0; device < devicecount; device ++) kuhdaWarmupDevice(device);
     
     printf("streamsperdevice = %d\n", streamsperdevice);
     GPUCHECK(cudaGetDeviceCount(&devicecount));
@@ -61,7 +66,6 @@ int main(int argc, char* argv[]) {
     int streamcount = streamsperdevice*devicecount;
     cudaStream_t d_streams[streamcount];
     cublasHandle_t handles[devicecount];
-
 
     double *membuffs[devicecount][ABC];
 
@@ -73,7 +77,7 @@ int main(int argc, char* argv[]) {
     for (device = 0; device < devicecount; device++){
         //printf("Number of threads = %d\n", omp_get_thread_num());
         GPUCHECK(cudaSetDevice(device));
-        CUBLASCHECK(cublasCreate(&handles[device]));
+        CUBLASCHECK(cublasCreate(&handles[device])); 
 
         for (abc = 0; abc < ABC; ++abc){
             d_All[device][abc] = kuhdaMallocDeviceM(x, x);
