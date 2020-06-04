@@ -12,7 +12,7 @@ This is the second iteration of the algorithm, after commentary from HH. This in
 - Check whether some matrices need to be repeated
 
 run with
-nvcc -O3 -lXcompiler -fopenmp -lcublas ../DIEKUHDA/kuhda.cu AllDeviceMultiplication2.cu && ./a.out 1000 500
+nvcc -O3 -Xcompiler -fopenmp -lcublas ../DIEKUHDA/kuhda.cu AllDeviceMultiplication2.cu && ./a.out 1000 500
 */
 
 
@@ -89,7 +89,7 @@ int main(int argc, char* argv[]) {
     for (mtile = 0; mtile < m/x; ++mtile){
         // Loop over columns of B:
         for (ntile = 0; ntile < n/x; ++ntile){
-            #pragma omp parallel for private(ktile) num_threads(NUMTHREADS)
+            // #pragma omp parallel for private(ktile) num_threads(NUMTHREADS)
             // Loop over columns of A and rows of B:
             for (ktile = 0; ktile < k/x; ++ktile){
                 // Set device by using integer division: 0, 0, 0, 1, 1, 1, ...
@@ -98,6 +98,7 @@ int main(int argc, char* argv[]) {
 
                 // Check whether current stream is available:
                 gpuErrchk(cudaStreamSynchronize(d_streams[streamindex]));
+                
 
                 TileHostToGPU(mtile*x, (mtile+1)*x, ktile*x, (ktile+1)*x, h_A, d_All[currentdevice][0], d_streams[streamindex]); // Tile A
                 TileHostToGPU(ktile*x, (ktile+1)*x, ntile*x, (ntile+1)*x, h_B, d_All[currentdevice][1], d_streams[streamindex]); // Tile B
@@ -105,6 +106,7 @@ int main(int argc, char* argv[]) {
                 // damn man dads fast
                 kuhdamm(d_All[currentdevice][0], d_All[currentdevice][1], d_All[currentdevice][2], d_streams[streamindex], 0);
 
+                gpuErrchk(cudaDeviceSynchronize());
                 // Get the tile back
                 TileGPUAddToHost(mtile*x, (mtile+1)*x, ntile*x, (ntile+1)*x, d_All[currentdevice][2], h_C, d_streams[streamindex]); // credzz to louis
 
@@ -131,6 +133,8 @@ int main(int argc, char* argv[]) {
 	kuhdaFreeM(h_A, 'k');
 	kuhdaFreeM(h_B, 'k');
     kuhdaFreeM(h_C, 'k');
+
+    timer.Release();
 
     #pragma omp parallel for private(device, abc, stream) num_threads(NUMTHREADS)
     for (device = 0; device < devicecount; device++){

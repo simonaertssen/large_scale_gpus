@@ -144,6 +144,7 @@ void TileGPUAddToHost(unsigned long rowstart, unsigned long rowstop, unsigned lo
 
 /* CUDA-specific */
 void kuhdaWarmup(int devicecount);
+void kuhdaWarmupDevice(int device); // for omp parallel calls
 cudaError_t gpuAssert(cudaError_t code, const char *file, int line);
 cublasStatus_t cublasAssert(cublasStatus_t error, const char *file, int line);
 
@@ -159,9 +160,6 @@ struct MatMulTimer
 	}
 
 	~MatMulTimer() {
-    cudaStreamDestroy(stream);
-		cudaEventDestroy(start);
-		cudaEventDestroy(stop);
 	}
 
 	void Start() {
@@ -172,17 +170,23 @@ struct MatMulTimer
 		cudaEventRecord(stop, stream);
 	}
 
+	void Release(){
+		cudaStreamDestroy(stream);
+		cudaEventDestroy(start);
+		cudaEventDestroy(stop);
+	}
+
 	double GFLOPS_DGEMM(unsigned int m, unsigned int n, unsigned int k) {
 		// Calculate the number of operations necessary for a matrix multiplication A * B with [A] = m x k and [B] = k x n
-	  // See https://forums.developer.nvidia.com/t/how-to-compute-gflops-for-gemm-blas/20218/6
+	  	// See https://forums.developer.nvidia.com/t/how-to-compute-gflops-for-gemm-blas/20218/6
 		float elapsedtime;
 		cudaEventSynchronize(stop);
 		cudaEventElapsedTime(&elapsedtime, start, stop);
-	  long unsigned int numerator = (long unsigned int)(m * n) * (long unsigned int)(2 * k + 2);
-    double denominator = (double) 1.0e6 * elapsedtime;
-    printf("elapsed time = %lf\n", elapsedtime);
+	  	long unsigned int numerator = (long unsigned int)(m * n) * (long unsigned int)(2 * k + 2); 		// [GFLOP]
+    	double denominator = (double) 1.0e6 * elapsedtime;												// [1/s]
+    	// printf("elapsed time = %lf\n", elapsedtime);
 		return (double) numerator / denominator;
-  }
+  	}
 
   double GFLOPS_MM(int m, int n, int k) {
 	  // Calculate the number of operations necessary for a matrix multiplication A * B with [A] = m x k and [B] = k x n
@@ -199,7 +203,7 @@ struct MatMulTimer
 	private :
 		cudaEvent_t start;
 		cudaEvent_t stop;
-    cudaStream_t stream;
+    	cudaStream_t stream; // aka mainstream
 };
 
 

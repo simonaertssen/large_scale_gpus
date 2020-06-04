@@ -375,7 +375,8 @@ TileHostToGPU: memcopy tile of host matrix to device asynchronously.
 Arguments: dimensions / location of tile to be copied, pointers to hostmatrix & device-tile, streams
 Return value: none
 */
-void TileHostToGPU(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *h_matrix, matrix *d_tile, cudaStream_t stream)
+void TileHostToGPU(	unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, 
+					matrix *h_matrix, matrix *d_tile, cudaStream_t stream )
 {	
 	// check input
 	if (h_matrix == NULL || d_tile == NULL) 	INPUT_NULL_ERR;
@@ -388,9 +389,9 @@ void TileHostToGPU(unsigned long rowstart, unsigned long rowstop, unsigned long 
 	cudaError_t failure;
 
 	// allocate space (size of a single tile row) on the host:
-	//double *memacc = (double*)malloc(cols*sizeof(double));
-	double *memacc = NULL;
-	GPUCHECK(cudaMallocHost((void**)&memacc, cols*sizeof(double)));
+	double *memacc = (double*)malloc(cols*sizeof(double));
+	// double *memacc = NULL;
+	// GPUCHECK(cudaMallocHost((void**)&memacc, cols*sizeof(double)));
 	if (memacc == NULL){
 		MEM_ERR;
 		//free(memacc);
@@ -408,13 +409,16 @@ void TileHostToGPU(unsigned long rowstart, unsigned long rowstop, unsigned long 
 		// Asynchronous copy to device
 		// takes (d_arr, h_arr, nbytes, cudaMemcpyHostToDevice, stream)
 		failure = gpuErrchk(cudaMemcpyAsync((void*) (&d_tile->data[0] + (cols * (i-rowstart))), memacc, cols*sizeof(double), cudaMemcpyHostToDevice, stream));
+		
 
+		
 		if (failure != 0) {
 			FAIL_ERR(failure);
 			cudaFree(d_tile);
 			}
 	}
-	cudaFreeHost(memacc);
+	//cudaFreeHost(memacc);
+	free(memacc);
 	return;
 }
 
@@ -424,7 +428,8 @@ TileGPUToHost: memcopy tile of device matrix to host asynchronously.
 Arguments: dimensions / location of tile to be copied, pointers to hostmatrix & device-tile, streams
 Return value: none
 */
-void TileGPUToHost(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *d_tile, matrix *h_matrix, cudaStream_t stream)
+void TileGPUToHost(	unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, 
+					matrix *d_tile, matrix *h_matrix, cudaStream_t stream )
 {
 	// check input
 	if (h_matrix == NULL || d_tile == NULL) 	INPUT_NULL_ERR;
@@ -470,7 +475,8 @@ TileGPUAddToHost: memcopy and add tile of device matrix to host.
 Arguments: dimensions / location of tile to be copied, pointers to hostmatrix & device-tile, streams
 Return value: none
 */
-void TileGPUAddToHost(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *d_tile, matrix *h_matrix, cudaStream_t stream)
+void TileGPUAddToHost(	unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, 
+					  	matrix *d_tile, matrix *h_matrix, cudaStream_t stream )
 {
 	// check input
 	if (h_matrix == NULL || d_tile == NULL) 	INPUT_NULL_ERR;
@@ -483,9 +489,9 @@ void TileGPUAddToHost(unsigned long rowstart, unsigned long rowstop, unsigned lo
 	unsigned long cols = colstop - colstart, i, j;
 	cudaError_t failure;
 
-	//double *memacc = (double*)malloc(cols*sizeof(double));
-	double *memacc = NULL;
-	GPUCHECK(cudaMallocHost(&memacc, cols*sizeof(double)));
+	double *memacc = (double*)malloc(cols*sizeof(double));
+	// double *memacc = NULL;
+	// GPUCHECK(cudaMallocHost(&memacc, cols*sizeof(double)));
 
 	if (memacc == NULL){
 		MEM_ERR;
@@ -508,7 +514,8 @@ void TileGPUAddToHost(unsigned long rowstart, unsigned long rowstop, unsigned lo
 			cudaFree(d_tile);
 		}
 	}
-	cudaFreeHost(memacc);
+	//cudaFreeHost(memacc);
+	free(memacc);
 	return;
 }
 
@@ -545,15 +552,26 @@ void kuhdaWarmup(int devicecount){
 	// Sync current device
 	cudaDeviceSynchronize();
 	int device;
+	// #pragma omp parallel for private(device) num_threads(devicecount)
 	for(device = 0; device < devicecount; ++device){
 		GPUCHECK(cudaSetDevice(device));
 		int *testint = 0;
 		GPUCHECK(cudaMalloc((void**)&testint,sizeof(int)));
 		GPUCHECK(cudaFree(testint));
-		cudaDeviceSynchronize();
+		GPUCHECK(cudaDeviceSynchronize());
 	}
 }
 
+void kuhdaWarmupDevice(int device){
+	// Sync current device
+	GPUCHECK(cudaDeviceSynchronize());
+	GPUCHECK(cudaSetDevice(device));
+	// Allocate space for a dummy int
+	int *testint = 0;
+	GPUCHECK(cudaMalloc((void**)&testint,sizeof(int)));
+	GPUCHECK(cudaFree(testint));
+	GPUCHECK(cudaDeviceSynchronize());
+}
 
 
 /********************************************/
