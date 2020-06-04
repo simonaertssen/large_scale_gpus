@@ -10,6 +10,9 @@ This is the second iteration of the algorithm, after commentary from HH. This in
 - Perform kuhdaWarmup
 - Create a cublas handle on every device in the first loop to relieve stress from kuhdamm
 - Check whether some matrices need to be repeated
+
+run with
+nvcc -O3 -lXcompiler -fopenmp -lcublas ../DIEKUHDA/kuhda.cu AllDeviceMultiplication2.cu && ./a.out 1000 500
 */
 
 
@@ -39,25 +42,21 @@ int main(int argc, char* argv[]) {
     }
 
 	// Containers for host and device matrices
-	matrix *h_A  = kuhdaMallocMP1(n, n); // diagonal A matrix
-	matrix *h_B  = kuhdaMallocMP1(n, n); // diagonal B matrix
-	matrix *h_C  = kuhdaMallocMP(n, n); // empty C matrix
+	matrix *h_A  = kuhdaMallocM1(n, n); // diagonal A matrix
+	matrix *h_B  = kuhdaMallocM1(n, n); // diagonal B matrix
+	matrix *h_C  = kuhdaMallocM(n, n); // empty C matrix
 
-  int abc, ABC = 3, device, devicecount = 4, stream, streamsperdevice = 20;//(n/x)*(n/x);
-  printf("streamsperdevice = %d\n", streamsperdevice);
-  gpuErrchk(cudaGetDeviceCount(&devicecount));
-  matrix *d_All[devicecount][ABC];
+    int abc, ABC = 3; // counters to loop through matrices
+    int device, devicecount = 4;
+    int stream, streamsperdevice = 20; //(n/x)*(n/x);
+    
+    printf("streamsperdevice = %d\n", streamsperdevice);
+    gpuErrchk(cudaGetDeviceCount(&devicecount));
+    matrix *d_All[devicecount][ABC];
 
-  int streamcount = streamsperdevice*devicecount;
-  cudaStream_t d_streams[streamcount];
+    int streamcount = streamsperdevice*devicecount;
+    cudaStream_t d_streams[streamcount];
 
-  gpuErrchk(cudaSetDevice(0));
-  cudaStream_t mainstream;
-  gpuErrchk(cudaStreamCreate(&mainstream));
-  cudaEvent_t mainstart, mainstop;
-	float mainstreamtimer;
-  gpuErrchk(cudaEventCreate(&mainstart));
-	gpuErrchk(cudaEventCreate(&mainstop));
 
     MatMulTimer timer;
 
@@ -75,13 +74,13 @@ int main(int argc, char* argv[]) {
         for (stream = 0; stream < streamsperdevice; ++stream){
             gpuErrchk(cudaStreamCreate(&d_streams[stream + streamsperdevice*device]));
             //gpuErrchk(cudaEventCreate(&bufferIsFull[stream + streamsperdevice*device]));
+
         }
     }
 
 
     printf("Computation start\n");
     timer.Start();
-    gpuErrchk(cudaEventRecord(mainstart, mainstream));
 
     int streamindex = 0, currentdevice = 0;
     int mtile = 0, ntile = 0, ktile = 0;
@@ -115,10 +114,6 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    gpuErrchk(cudaEventRecord(mainstop, mainstream));
-    gpuErrchk(cudaEventSynchronize(mainstop));
-    gpuErrchk(cudaEventElapsedTime(&mainstreamtimer, mainstart, mainstop));
-	printf("Multiplication on device 0 took %lf seconds\n", mainstreamtimer/1000);
 
     timer.Stop();
     double timingResult = timer.GFLOPS_DGEMM(m, n, k);
@@ -132,13 +127,10 @@ int main(int argc, char* argv[]) {
     // Free all
     printf("Cleaning up ..\n");
     gpuErrchk(cudaSetDevice(0));
-    gpuErrchk(cudaStreamDestroy(mainstream));
-    gpuErrchk(cudaEventDestroy(mainstart));
-	gpuErrchk(cudaEventDestroy(mainstop));
 
-	kuhdaFreeM(h_A, 'p');
-	kuhdaFreeM(h_B, 'p');
-    kuhdaFreeM(h_C, 'p');
+	kuhdaFreeM(h_A, 'k');
+	kuhdaFreeM(h_B, 'k');
+    kuhdaFreeM(h_C, 'k');
 
     #pragma omp parallel for private(device, abc, stream) num_threads(NUMTHREADS)
     for (device = 0; device < devicecount; device++){
