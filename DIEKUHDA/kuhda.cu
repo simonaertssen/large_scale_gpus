@@ -175,6 +175,22 @@ void kuhdaPrintM(matrix *printthismatrix){
 		}
 		printf("|\n");
 	}
+	printf("\n");
+}
+
+void kuhdaPrintDeviceM(matrix *printthismatrix){
+	size_t matrixsize = (size_t) printthismatrix->r * printthismatrix->c * sizeof(double);
+	double *printme = (double*)malloc(matrixsize);
+		cudaMemcpy(printme, printthismatrix->data, matrixsize, cudaMemcpyDeviceToHost);
+		unsigned long i,j;
+	for (i = 0; i < printthismatrix->r; ++i){
+		printf("|");
+		for (j = 0; j < printthismatrix->c; ++j){
+			printf("%6.2lf", printme[i*printthismatrix->c + j]);
+		}
+		printf("|\n");
+	}
+	printf("\n");
 }
 
 // Test whether all elements of this matrix are equal to its' dimensions.
@@ -389,9 +405,9 @@ void TileHostToGPU(	unsigned long rowstart, unsigned long rowstop, unsigned long
 	cudaError_t failure;
 
 	// allocate space (size of a single tile row) on the host:
-	double *memacc = (double*)malloc(cols*sizeof(double));
-	// double *memacc = NULL;
-	// GPUCHECK(cudaMallocHost((void**)&memacc, cols*sizeof(double)));
+	// double *memacc = (double*)malloc(cols*sizeof(double));
+	double *memacc = NULL;
+	GPUCHECK(cudaMallocHost((void**)&memacc, cols*sizeof(double)));
 	if (memacc == NULL){
 		MEM_ERR;
 		//free(memacc);
@@ -405,20 +421,21 @@ void TileHostToGPU(	unsigned long rowstart, unsigned long rowstop, unsigned long
 			// fill memacc with host-matrix data one (tile-)row at a time:
 			memacc[j-colstart] = h_matrix->data[i * h_matrix->c + j];
 		}
-
+		gpuErrchk(cudaStreamSynchronize(stream));
 		// Asynchronous copy to device
 		// takes (d_arr, h_arr, nbytes, cudaMemcpyHostToDevice, stream)
-		failure = gpuErrchk(cudaMemcpyAsync((void*) (&d_tile->data[0] + (cols * (i-rowstart))), memacc, cols*sizeof(double), cudaMemcpyHostToDevice, stream));
+		// failure = gpuErrchk(cudaMemcpyAsync((void*) (&d_tile->data[0] + (cols * (i-rowstart))), memacc, cols*sizeof(double), cudaMemcpyHostToDevice, stream));
+		failure = gpuErrchk(cudaMemcpy((void*) (&d_tile->data[0] + (cols * (i-rowstart))), memacc, cols*sizeof(double), cudaMemcpyHostToDevice));
 		
-
+		gpuErrchk(cudaStreamSynchronize(stream));
 		
 		if (failure != 0) {
 			FAIL_ERR(failure);
 			cudaFree(d_tile);
 			}
 	}
-	//cudaFreeHost(memacc);
-	free(memacc);
+	cudaFreeHost(memacc);
+	// free(memacc);
 	return;
 }
 
@@ -489,9 +506,9 @@ void TileGPUAddToHost(	unsigned long rowstart, unsigned long rowstop, unsigned l
 	unsigned long cols = colstop - colstart, i, j;
 	cudaError_t failure;
 
-	double *memacc = (double*)malloc(cols*sizeof(double));
-	// double *memacc = NULL;
-	// GPUCHECK(cudaMallocHost(&memacc, cols*sizeof(double)));
+	// double *memacc = (double*)malloc(cols*sizeof(double));
+	double *memacc = NULL;
+	GPUCHECK(cudaMallocHost(&memacc, cols*sizeof(double)));
 
 	if (memacc == NULL){
 		MEM_ERR;
@@ -502,20 +519,22 @@ void TileGPUAddToHost(	unsigned long rowstart, unsigned long rowstop, unsigned l
 
 	// 'strided' copy, row by row
 	for (i=rowstart; i<rowstop; ++i){
+		gpuErrchk(cudaStreamSynchronize(stream));
 		// takes (d_arr, h_arr, nbytes, cudaMemcpyHostToDevice, stream)
-		failure = gpuErrchk(cudaMemcpyAsync(memacc, (void*) (&d_tile->data[0] + (cols * (i-rowstart))), cols*sizeof(double), cudaMemcpyDeviceToHost, stream));
+		// failure = gpuErrchk(cudaMemcpyAsync(memacc, (void*) (&d_tile->data[0] + (cols * (i-rowstart))), cols*sizeof(double), cudaMemcpyDeviceToHost, stream));
+		failure = gpuErrchk(cudaMemcpy((void*) (&d_tile->data[0] + (cols * (i-rowstart))), memacc, cols*sizeof(double), cudaMemcpyHostToDevice));
 		for (j=colstart; j<colstop; ++j){
 			h_matrix->data[i * h_matrix->c + j] += memacc[j-colstart];
 			//memacc[j-colstart] = h_matrix->data[i * h_matrix->c + j];
 		}
-
+		gpuErrchk(cudaStreamSynchronize(stream));
 		if (failure != 0) {
 			FAIL_ERR(failure);
 			cudaFree(d_tile);
 		}
 	}
-	//cudaFreeHost(memacc);
-	free(memacc);
+	cudaFreeHost(memacc);
+	// free(memacc);
 	return;
 }
 
@@ -680,7 +699,7 @@ int kuhdamm(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, cudaStream_t s
 		return -1;
 	}
 
-	failure = cublasSetStream(handle, stream);
+	// failure = cublasSetStream(handle, stream);
 	if (failure != 0){
 		FAIL_ERR(failure);
 		return -1;

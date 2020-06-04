@@ -14,7 +14,11 @@ This is the second iteration of the algorithm, after commentary from HH. This in
 run with
 nvcc -O3 -Xcompiler -fopenmp -lcublas ../DIEKUHDA/kuhda.cu AllDeviceMultiplication2.cu && ./a.out 1000 500
 */
+void TileHostToGPUBuff(	unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, 
+    matrix *h_matrix, matrix *d_tile, cudaStream_t stream, double* memacc );
 
+void TileGPUAddToHostBuff(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, 
+    matrix *d_tile, matrix *h_matrix, cudaStream_t stream, double* memacc );
 
 int main(int argc, char* argv[]) {
 
@@ -57,6 +61,7 @@ int main(int argc, char* argv[]) {
     int streamcount = streamsperdevice*devicecount;
     cudaStream_t d_streams[streamcount];
 
+    double *membuffs[devicecount][ABC];
 
     MatMulTimer timer;
 
@@ -69,6 +74,8 @@ int main(int argc, char* argv[]) {
 
         for (abc = 0; abc < ABC; ++abc){
             d_All[device][abc] = kuhdaMallocDeviceM(x, x);
+            // GPUCHECK(cudaMallocHost(&membuffs[device][abc], x*sizeof(double)));
+            GPUCHECK(cudaHostAlloc(&membuffs[device][abc], x*sizeof(double), cudaHostAllocPortable));
         }
 
         for (stream = 0; stream < streamsperdevice; ++stream){
@@ -96,22 +103,23 @@ int main(int argc, char* argv[]) {
                 currentdevice = streamindex/streamsperdevice;
                 gpuErrchk(cudaSetDevice(currentdevice));
 
-                // Check whether current stream is available:
-                gpuErrchk(cudaStreamSynchronize(d_streams[streamindex]));
-                
+                TileHostToGPUBuff(mtile*x, (mtile+1)*x, ktile*x, (ktile+1)*x, h_A, d_All[currentdevice][0], d_streams[streamindex], membuffs[currentdevice][0]); // Tile A
+                TileHostToGPUBuff(ktile*x, (ktile+1)*x, ntile*x, (ntile+1)*x, h_B, d_All[currentdevice][1], d_streams[streamindex], membuffs[currentdevice][1]); // Tile B
 
-                TileHostToGPU(mtile*x, (mtile+1)*x, ktile*x, (ktile+1)*x, h_A, d_All[currentdevice][0], d_streams[streamindex]); // Tile A
-                TileHostToGPU(ktile*x, (ktile+1)*x, ntile*x, (ntile+1)*x, h_B, d_All[currentdevice][1], d_streams[streamindex]); // Tile B
 
                 // damn man dads fast
                 kuhdamm(d_All[currentdevice][0], d_All[currentdevice][1], d_All[currentdevice][2], d_streams[streamindex], 0);
 
-                gpuErrchk(cudaDeviceSynchronize());
-                // Get the tile back
-                TileGPUAddToHost(mtile*x, (mtile+1)*x, ntile*x, (ntile+1)*x, d_All[currentdevice][2], h_C, d_streams[streamindex]); // credzz to louis
+                // kuhdaPrintDeviceM(d_All[currentdevice][2]);
 
+                // Get the tile back
+                TileGPUAddToHostBuff(mtile*x, (mtile+1)*x, ntile*x, (ntile+1)*x, d_All[currentdevice][2], h_C, d_streams[streamindex], membuffs[currentdevice][2]);
+
+                // Check whether current stream is available:
                 streamindex++;
                 streamindex = streamindex%streamcount;
+
+                // kuhdaPrintM(h_C);
             }
         }
     }
@@ -142,6 +150,7 @@ int main(int argc, char* argv[]) {
 
         for (abc = 0; abc < ABC; ++abc){
             kuhdaFreeM(d_All[device][abc], 'c');
+            gpuErrchk(cudaFreeHost(membuffs[device][abc]));
         }
 
         for (stream = 0; stream < streamsperdevice; ++stream){
@@ -152,4 +161,103 @@ int main(int argc, char* argv[]) {
     }
 
 	return 0;
+}
+
+
+void TileHostToGPUBuff(	unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, 
+    matrix *h_matrix, matrix *d_tile, cudaStream_t stream, double* memacc )
+{	
+    // check input
+    if (h_matrix == NULL || d_tile == NULL) 	INPUT_NULL_ERR;
+    if (rowstart > rowstop) INPUT_ILL_ERR_LU(rowstop);
+    if (colstart > colstop)	INPUT_ILL_ERR_LU(colstop);
+    if (h_matrix->r <= 0 || h_matrix->c <= 0 || d_tile->r <= 0 || d_tile->c <= 0) INPUT_ILL_ERR_LU(h_matrix->r);
+    if (stream == NULL) INPUT_NULL_ERR;
+
+    unsigned long cols = colstop - colstart, i, j;
+    cudaError_t failure;
+
+    // allocate space (size of a single tile row) on the host:
+    // double *memacc = (double*)malloc(cols*sizeof(double));
+    // double *memacc = NULL;
+    // GPUCHECK(cudaMallocHost((void**)&memacc, cols*sizeof(double)));
+    // if (memacc == NULL){
+    // MEM_ERR;
+    // //free(memacc);
+    // cudaFreeHost(memacc);
+    // return;
+    // }
+
+    // 'strided' copy, row by row
+    for (i=rowstart; i<rowstop; ++i){
+    for (j=colstart; j<colstop; ++j){
+    // fill memacc with host-matrix data one (tile-)row at a time:
+    memacc[j-colstart] = h_matrix->data[i * h_matrix->c + j];
+    }
+    // gpuErrchk(cudaStreamSynchronize(stream));
+    // Asynchronous copy to device
+    // takes (d_arr, h_arr, nbytes, cudaMemcpyHostToDevice, stream)
+    failure = gpuErrchk(cudaMemcpyAsync((void*) (&d_tile->data[0] + (cols * (i-rowstart))), memacc, cols*sizeof(double), cudaMemcpyHostToDevice, stream));
+    // failure = gpuErrchk(cudaMemcpy((void*) (&d_tile->data[0] + (cols * (i-rowstart))), memacc, cols*sizeof(double), cudaMemcpyHostToDevice));
+
+    gpuErrchk(cudaStreamSynchronize(stream));
+            
+    if (failure != 0) {
+        FAIL_ERR(failure);
+        cudaFree(d_tile);
+        }
+    }
+    // cudaFreeHost(memacc);
+    // free(memacc);
+    return;
+}
+
+void TileGPUAddToHostBuff(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, 
+    matrix *d_tile, matrix *h_matrix, cudaStream_t stream, double* memacc )
+{
+// check input
+if (h_matrix == NULL || d_tile == NULL) 	INPUT_NULL_ERR;
+if (rowstart > rowstop) INPUT_ILL_ERR_LU(rowstop);
+if (colstart > colstop)	INPUT_ILL_ERR_LU(colstop);
+if (h_matrix->r <= 0 || h_matrix->c <= 0 || d_tile->r <= 0 || d_tile->c <= 0) INPUT_ILL_ERR_LU(h_matrix->r);
+if (stream == NULL) INPUT_NULL_ERR;
+
+
+unsigned long cols = colstop - colstart, i, j;
+cudaError_t failure;
+
+
+// double *memacc = (double*)malloc(cols*sizeof(double));
+// double *memacc = NULL;
+// GPUCHECK(cudaMallocHost(&memacc, cols*sizeof(double)));
+
+/*
+if (memacc == NULL){
+    MEM_ERR;
+    //free(memacc);
+    cudaFreeHost(memacc);
+    return;
+    }
+*/
+
+// 'strided' copy, row by row
+for (i=rowstart; i<rowstop; ++i){
+    // takes (d_arr, h_arr, nbytes, cudaMemcpyHostToDevice, stream)
+    failure = gpuErrchk(cudaMemcpyAsync(memacc, (void*) (&d_tile->data[0] + (cols * (i-rowstart))), cols*sizeof(double), cudaMemcpyDeviceToHost, stream));
+    // failure = gpuErrchk(cudaMemcpy(memacc, (void*) (&d_tile->data[0] + (cols * (i-rowstart))), cols*sizeof(double), cudaMemcpyDeviceToHost));
+    gpuErrchk(cudaStreamSynchronize(stream));
+
+    for (j=colstart; j<colstop; ++j){
+        h_matrix->data[i * h_matrix->c + j] += memacc[j-colstart];
+        //memacc[j-colstart] = h_matrix->data[i * h_matrix->c + j]; 
+    }
+
+    if (failure != 0) {
+        FAIL_ERR(failure);
+        cudaFree(d_tile);
+    }
+}
+// cudaFreeHost(memacc);
+// free(memacc);
+return;
 }

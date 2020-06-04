@@ -128,6 +128,7 @@ void kuhdaTestDiagonalForValue(matrix *A, double value, int verbose);
 /* Printing */
 void kuhdaPrintV(vector *freethisvector);
 void kuhdaPrintM(matrix *printhismatrix);
+void kuhdaPrintDeviceM(matrix *printthismatrix);
 void kuhdaTestM(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *testhismatrix);
 int kuhdaTestMsilent(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, matrix *testhismatrix, int verbose);
 
