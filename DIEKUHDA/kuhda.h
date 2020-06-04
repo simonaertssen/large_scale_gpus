@@ -241,7 +241,7 @@ struct Timer
 		float elapsedtime;
 };
 
-int kuhdamm(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, cudaStream_t stream, int verbose);
+int kuhdamm(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, cudaStream_t stream, cublasHandle_t handle);
 long long kuhdaTimeDGEMM(matrix *d_matrix, int reps, int verbose);
 
 #endif

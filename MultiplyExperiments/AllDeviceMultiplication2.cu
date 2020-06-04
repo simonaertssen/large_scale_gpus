@@ -55,11 +55,13 @@ int main(int argc, char* argv[]) {
     int stream, streamsperdevice = 20; //(n/x)*(n/x);
     
     printf("streamsperdevice = %d\n", streamsperdevice);
-    gpuErrchk(cudaGetDeviceCount(&devicecount));
+    GPUCHECK(cudaGetDeviceCount(&devicecount));
     matrix *d_All[devicecount][ABC];
 
     int streamcount = streamsperdevice*devicecount;
     cudaStream_t d_streams[streamcount];
+    cublasHandle_t handles[devicecount];
+
 
     double *membuffs[devicecount][ABC];
 
@@ -70,7 +72,8 @@ int main(int argc, char* argv[]) {
     // Creat all dependencies:
     for (device = 0; device < devicecount; device++){
         //printf("Number of threads = %d\n", omp_get_thread_num());
-        gpuErrchk(cudaSetDevice(device));
+        GPUCHECK(cudaSetDevice(device));
+        CUBLASCHECK(cublasCreate(&handles[device]));
 
         for (abc = 0; abc < ABC; ++abc){
             d_All[device][abc] = kuhdaMallocDeviceM(x, x);
@@ -79,8 +82,8 @@ int main(int argc, char* argv[]) {
         }
 
         for (stream = 0; stream < streamsperdevice; ++stream){
-            gpuErrchk(cudaStreamCreate(&d_streams[stream + streamsperdevice*device]));
-            //gpuErrchk(cudaEventCreate(&bufferIsFull[stream + streamsperdevice*device]));
+            GPUCHECK(cudaStreamCreate(&d_streams[stream + streamsperdevice*device]));
+            //GPUCHECK(cudaEventCreate(&bufferIsFull[stream + streamsperdevice*device]));
 
         }
     }
@@ -101,14 +104,14 @@ int main(int argc, char* argv[]) {
             for (ktile = 0; ktile < k/x; ++ktile){
                 // Set device by using integer division: 0, 0, 0, 1, 1, 1, ...
                 currentdevice = streamindex/streamsperdevice;
-                gpuErrchk(cudaSetDevice(currentdevice));
+                GPUCHECK(cudaSetDevice(currentdevice));
 
                 TileHostToGPUBuff(mtile*x, (mtile+1)*x, ktile*x, (ktile+1)*x, h_A, d_All[currentdevice][0], d_streams[streamindex], membuffs[currentdevice][0]); // Tile A
                 TileHostToGPUBuff(ktile*x, (ktile+1)*x, ntile*x, (ntile+1)*x, h_B, d_All[currentdevice][1], d_streams[streamindex], membuffs[currentdevice][1]); // Tile B
 
 
-                // damn man dads fast
-                kuhdamm(d_All[currentdevice][0], d_All[currentdevice][1], d_All[currentdevice][2], d_streams[streamindex], 0);
+                // damn man dads not sooo fast.. yet
+                kuhdamm(d_All[currentdevice][0], d_All[currentdevice][1], d_All[currentdevice][2], d_streams[streamindex], handles[currentdevice]);
 
                 // kuhdaPrintDeviceM(d_All[currentdevice][2]);
 
@@ -136,7 +139,7 @@ int main(int argc, char* argv[]) {
 
     // Free all
     printf("Cleaning up ..\n");
-    gpuErrchk(cudaSetDevice(0));
+    GPUCHECK(cudaSetDevice(0));
 
 	kuhdaFreeM(h_A, 'k');
 	kuhdaFreeM(h_B, 'k');
@@ -146,18 +149,19 @@ int main(int argc, char* argv[]) {
 
     #pragma omp parallel for private(device, abc, stream) num_threads(NUMTHREADS)
     for (device = 0; device < devicecount; device++){
-        gpuErrchk(cudaSetDevice(device));
+        GPUCHECK(cudaSetDevice(device));
+        CUBLASCHECK(cublasDestroy(handles[device]));
 
         for (abc = 0; abc < ABC; ++abc){
             kuhdaFreeM(d_All[device][abc], 'c');
-            gpuErrchk(cudaFreeHost(membuffs[device][abc]));
+            GPUCHECK(cudaFreeHost(membuffs[device][abc]));
         }
 
         for (stream = 0; stream < streamsperdevice; ++stream){
-            gpuErrchk(cudaStreamDestroy(d_streams[stream + streamsperdevice*device]));
+            GPUCHECK(cudaStreamDestroy(d_streams[stream + streamsperdevice*device]));
         }
         // Takes NO arguments
-        gpuErrchk(cudaDeviceReset());
+        GPUCHECK(cudaDeviceReset());
     }
 
 	return 0;
@@ -194,13 +198,13 @@ void TileHostToGPUBuff(	unsigned long rowstart, unsigned long rowstop, unsigned 
     // fill memacc with host-matrix data one (tile-)row at a time:
     memacc[j-colstart] = h_matrix->data[i * h_matrix->c + j];
     }
-    // gpuErrchk(cudaStreamSynchronize(stream));
+    // GPUCHECK(cudaStreamSynchronize(stream));
     // Asynchronous copy to device
     // takes (d_arr, h_arr, nbytes, cudaMemcpyHostToDevice, stream)
-    failure = gpuErrchk(cudaMemcpyAsync((void*) (&d_tile->data[0] + (cols * (i-rowstart))), memacc, cols*sizeof(double), cudaMemcpyHostToDevice, stream));
-    // failure = gpuErrchk(cudaMemcpy((void*) (&d_tile->data[0] + (cols * (i-rowstart))), memacc, cols*sizeof(double), cudaMemcpyHostToDevice));
+    failure = GPUCHECK(cudaMemcpyAsync((void*) (&d_tile->data[0] + (cols * (i-rowstart))), memacc, cols*sizeof(double), cudaMemcpyHostToDevice, stream));
+    // failure = GPUCHECK(cudaMemcpy((void*) (&d_tile->data[0] + (cols * (i-rowstart))), memacc, cols*sizeof(double), cudaMemcpyHostToDevice));
 
-    gpuErrchk(cudaStreamSynchronize(stream));
+    GPUCHECK(cudaStreamSynchronize(stream));
             
     if (failure != 0) {
         FAIL_ERR(failure);
@@ -243,9 +247,9 @@ if (memacc == NULL){
 // 'strided' copy, row by row
 for (i=rowstart; i<rowstop; ++i){
     // takes (d_arr, h_arr, nbytes, cudaMemcpyHostToDevice, stream)
-    failure = gpuErrchk(cudaMemcpyAsync(memacc, (void*) (&d_tile->data[0] + (cols * (i-rowstart))), cols*sizeof(double), cudaMemcpyDeviceToHost, stream));
-    // failure = gpuErrchk(cudaMemcpy(memacc, (void*) (&d_tile->data[0] + (cols * (i-rowstart))), cols*sizeof(double), cudaMemcpyDeviceToHost));
-    gpuErrchk(cudaStreamSynchronize(stream));
+    failure = GPUCHECK(cudaMemcpyAsync(memacc, (void*) (&d_tile->data[0] + (cols * (i-rowstart))), cols*sizeof(double), cudaMemcpyDeviceToHost, stream));
+    // failure = GPUCHECK(cudaMemcpy(memacc, (void*) (&d_tile->data[0] + (cols * (i-rowstart))), cols*sizeof(double), cudaMemcpyDeviceToHost));
+    GPUCHECK(cudaStreamSynchronize(stream));
 
     for (j=colstart; j<colstop; ++j){
         h_matrix->data[i * h_matrix->c + j] += memacc[j-colstart];
