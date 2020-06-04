@@ -1,0 +1,23 @@
+linebuffer:
+GFLOPS for n = 16384 and x = 16384
+2125.38
+2218.21
+2118.03
+average of 
+
+GFLOPS for n = 16384 and x = 8192
+1205.70
+1290.55
+1298.94
+average of 
+
+
+full buffer:
+GFLOPS for n = 16384 and x = 16384
+2613.58
+2458.57
+2545.02
+average of 
+
+GFLOPS for n = 16384 and x = 8192
+doesn't work??
