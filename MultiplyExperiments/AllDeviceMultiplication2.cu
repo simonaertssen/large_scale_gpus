@@ -68,22 +68,34 @@ int main(int argc, char* argv[]) {
     matrix *d_All[devicecount][ABC];
 
     int streamcount = streamsperdevice*devicecount;
-    size_t availableMemory, GBconv = 1024*1024*1024;
+    int Q; // register quotient of n/x
+    size_t availableMemory, queryMemory = (size_t) 3*x*x*sizeof(double), GBconv = 1000*1000*1000;
     cudaStream_t d_streams[streamcount];
     cublasHandle_t handles[devicecount];
     double *membuffs[devicecount][ABC];
 
     MatMulTimer timer;
 
+    // Measure available memory and adjust x if necessary
+    for (device = 0; device < devicecount; device++){
+        // Get device properties to measure available memory:
+        availableMemory = kuhdaAvailableMemoryOnCurrentDevice();
+        printf("%4.2lf GB available on device %d, asking for %4.2lf GB..\n", (double)availableMemory/GBconv, device, (double) queryMemory/GBconv);
+        if (availableMemory < queryMemory){
+            // get surplus query memory and register how many more x's we will need, + 1 is neccessary for the integer division              
+            Q = (int) n/x + (int)((availableMemory - queryMemory)/x) + 1; 
+            printf("Q was %d, now Q is %d\n", n/x, Q);
+            x = (unsigned int) n/Q;
+            queryMemory = 3*x*x*sizeof(double);
+            printf("Changed x to %d, now asking for %4.2lf GB..\n", x, (double) queryMemory/GBconv);
+        } 
+    }
+
     printf("Allocating tiles A, B and C on %d devices..\n", devicecount);
     #pragma omp parallel for private(device, abc, stream) num_threads(NUMTHREADS)
     // Creat all dependencies:
     for (device = 0; device < devicecount; device++){
         GPUCHECK(cudaSetDevice(device));
-
-        // Get device properties to measure available memory:
-        availableMemory = kuhdaAvailableMemoryOnCurrentDevice();
-        // printf("%4.2lf GB available on device %d, asking for %4.2lf GB..\n", (double)availableMemory/GBconv, device, (double) 3*x*x*sizeof(double)/GBconv);
         CUBLASCHECK(cublasCreate(&handles[device])); 
 
         for (abc = 0; abc < ABC; ++abc){
