@@ -146,6 +146,7 @@ void TileGPUAddToHost(unsigned long rowstart, unsigned long rowstop, unsigned lo
 /* CUDA-specific */
 void kuhdaWarmup(int devicecount);
 void kuhdaWarmupDevice(int device); // for omp parallel calls
+size_t kuhdaAvailableMemoryOnCurrentDevice();
 cudaError_t gpuAssert(cudaError_t code, const char *file, int line);
 cublasStatus_t cublasAssert(cublasStatus_t error, const char *file, int line);
 
@@ -193,11 +194,11 @@ struct MatMulTimer
 	  // Calculate the number of operations necessary for a matrix multiplication A * B with [A] = m x k and [B] = k x n
 	  // See https://software.intel.com/en-us/articles/a-simple-example-to-measure-the-performance-of-an-intel-mkl-function
 		float elapsedtime;
-	  long int M = (long int)m, N = (long int)n, K = (long int)k;
+	  	long int M = (long int)m, N = (long int)n, K = (long int)k;
 		cudaEventSynchronize(stop);
 		cudaEventElapsedTime(&elapsedtime, start, stop);
-	  long unsigned int numerator = (M * N) * (K - 2);
-    double denominator = (double) 1.0e6 * elapsedtime;
+	  	long unsigned int numerator = (M * N) * (K - 2);
+    	double denominator = (double) 1.0e6 * elapsedtime;
 		return (double) numerator / denominator;
 	}
 

@@ -591,6 +591,13 @@ void kuhdaWarmupDevice(int device){
 	GPUCHECK(cudaDeviceSynchronize());
 }
 
+// Check available memory to reduce tile size when too large
+size_t kuhdaAvailableMemoryOnCurrentDevice(){
+	size_t memfree, memtotal;
+	GPUCHECK(cudaMemGetInfo(&memfree, &memtotal));
+	return memfree;
+}
+
 
 /********************************************/
 /* 			Necessary computations			*/

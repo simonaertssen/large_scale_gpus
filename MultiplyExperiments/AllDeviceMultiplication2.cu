@@ -6,19 +6,23 @@
 
 /*
 With this script we are following some of the ideas from Jochen Kreuz to perform a tiled multiplication using cublas.
+We use a biffer that loads and copies tiles line by line. Problems were solved by stream synchronisation inside the 
+Tile...To... functions inthis script.
 This is the second iteration of the algorithm, after commentary from HH. This includes:
 - Perform kuhdaWarmup
 - Create a cublas handle on every device in the first loop to relieve stress from kuhdamm
+
 - Check whether some matrices need to be repeated
 
 run with
 nvcc -O3 -Xcompiler -fopenmp -lcublas ../DIEKUHDA/kuhda.cu AllDeviceMultiplication2.cu && ./a.out 1000 500
 */
+
 void TileHostToGPUBuff(	unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, 
     matrix *h_matrix, matrix *d_tile, cudaStream_t stream, double* memacc );
-
 void TileGPUAddToHostBuff(unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, 
     matrix *d_tile, matrix *h_matrix, cudaStream_t stream, double* memacc );
+
 
 int main(int argc, char* argv[]) {
 
@@ -26,9 +30,9 @@ int main(int argc, char* argv[]) {
     unsigned int n = 5000;
     if (argc > 1){
         n = (unsigned int)atoi(argv[1]);
-        printf("matrix dimension = %lu\n", n);
+        printf("matrix dimension = %lu, ", n);
         if (n > 40960 ) {
-            printf("matrix dimension too large ..\n");
+            printf("matrix dimension too large..\n");
             return -1;
         }
     }
@@ -40,16 +44,16 @@ int main(int argc, char* argv[]) {
         x = (unsigned int)atoi(argv[2]);
         printf("block size = %lu\n", x);
         if (x > n ) {
-            printf("block size too large ..\n");
+            x = n/2;
+            printf("block size too large, setting block size to %d..\n", x);
             return -1;
         }
     }
 
-
 	// Containers for host and device matrices
-	matrix *h_A  = kuhdaMallocM1(n, n); // diagonal A matrix
-	matrix *h_B  = kuhdaMallocM1(n, n); // diagonal B matrix
-	matrix *h_C  = kuhdaMallocM(n, n); // empty C matrix
+	matrix *h_A = kuhdaMallocM1(n, n); // diagonal A matrix
+	matrix *h_B = kuhdaMallocM1(n, n); // diagonal B matrix
+	matrix *h_C = kuhdaMallocM(n, n); // empty C matrix
 
     int abc, ABC = 3; // counters to loop through matrices
     int device, devicecount = 4;
@@ -64,19 +68,22 @@ int main(int argc, char* argv[]) {
     matrix *d_All[devicecount][ABC];
 
     int streamcount = streamsperdevice*devicecount;
+    size_t availableMemory, GBconv = 1024*1024*1024;
     cudaStream_t d_streams[streamcount];
     cublasHandle_t handles[devicecount];
-
     double *membuffs[devicecount][ABC];
 
     MatMulTimer timer;
 
-    printf("Allocating tiles A, B and C on %d devices\n", devicecount);
+    printf("Allocating tiles A, B and C on %d devices..\n", devicecount);
     #pragma omp parallel for private(device, abc, stream) num_threads(NUMTHREADS)
     // Creat all dependencies:
     for (device = 0; device < devicecount; device++){
-        //printf("Number of threads = %d\n", omp_get_thread_num());
         GPUCHECK(cudaSetDevice(device));
+
+        // Get device properties to measure available memory:
+        availableMemory = kuhdaAvailableMemoryOnCurrentDevice();
+        // printf("%4.2lf GB available on device %d, asking for %4.2lf GB..\n", (double)availableMemory/GBconv, device, (double) 3*x*x*sizeof(double)/GBconv);
         CUBLASCHECK(cublasCreate(&handles[device])); 
 
         for (abc = 0; abc < ABC; ++abc){
@@ -92,8 +99,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-
-    printf("Computation start\n");
+    printf("Computation start..\n");
     timer.Start();
 
     int streamindex = 0, currentdevice = 0;
