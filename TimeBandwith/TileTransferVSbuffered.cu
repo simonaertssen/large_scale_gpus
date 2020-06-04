@@ -6,6 +6,9 @@
 /*
 With this script we will be timing the performance of different approaches to memcopies between devices and the host.
 These tests are to find which approach is the fastest to be used in our matrix multiplication algorithms.
+
+run with
+nvcc -O3 -Xcompiler -fopenmp -lcublas ../DIEKUHDA/kuhda.cu --default-stream per-thread TileTransferVSbuffered.cu && a.out
 */
 
 /*
@@ -24,13 +27,17 @@ int main() {
   int verbose = 0, rep, reps = 5;
   int i, j;
 
-  printf("Timing the tiling operations for average of %d reps for matrix size n = %d\n", reps, n);
+  printf("\nTiming the tiling operations for average of %d reps for matrix size n = %d\n\n", reps, n);
 
   Timer timer;
   timer.Start();
-  kuhdaWarmup(4);
+
+  // parallel device warmup
+  #pragma omp parallel for private(device) num_threads(devicecount)
+  for (device = 0; device < devicecount; device ++) kuhdaWarmupDevice(device);
+  // kuhdaWarmup(devicecount);
   float elapsedtime = timer.Stop(), results = 0.f;
-  printf("Warmup took %f ms\n", elapsedtime);
+  printf("Warmup :  %9.0f ms\n", elapsedtime);
 
   // These numbers demarcate the limits of the tiles on the host matrix. For simplicity we are using 4 tiles.
   int destinations[4][4] = {{0, tiledim, 0, tiledim}, {0, tiledim, tiledim, n}, {tiledim, n, 0, tiledim}, {tiledim, n, tiledim, n}};
@@ -60,7 +67,7 @@ int main() {
       GPUCHECK(cudaDeviceSynchronize());
   }
   elapsedtime = timer.Stop();
-  printf("Allocation took %f ms\n", elapsedtime);
+  printf("Allocation :%7.0f ms\n", elapsedtime);
 
   /* 
   #################################################################################################################
@@ -68,7 +75,7 @@ int main() {
   1. Naive approach: pinned buffer of same size as tiles on host and cudaMemcpyAsync on one stream, back and forth
 
   #################################################################################################################
-  */
+
 
   results = 0.f;
   kuhdaFillWithValue(h_A, 1.0);
@@ -93,7 +100,7 @@ int main() {
     elapsedtime = timer.Stop();
     results += elapsedtime;
   }
-  printf("Naive H2D took %f ms\n", results/reps);
+  printf("Naive H2D : %7.0f ms\n", results/reps);
   kuhdaFillWithValue(h_A, 0.0);
 
   results = 0.f;
@@ -118,8 +125,9 @@ int main() {
     elapsedtime = timer.Stop();
     results += elapsedtime;
   }
-  printf("Naive D2H took %f ms\n", results/reps);
+  printf("Naive D2H : %7.0f ms\n", results/reps);
   kuhdaTestForValue(h_A, 1.0, verbose);
+  */
 
   /* 
   #################################################################################################################
@@ -136,7 +144,8 @@ int main() {
     #pragma omp parallel for private(device) num_threads(NUMTHREADS)
     for (device = 0; device < devicecount; device++){
       GPUCHECK(cudaSetDevice(device));
-      TileHostToGPU(destinations[device][0], destinations[device][1],destinations[device][2], destinations[device][3], h_A, d_A[device], d_streams[device*streamsperdevice]);
+      TileHostToGPU(destinations[device][0], destinations[device][1],destinations[device][2], 
+                    destinations[device][3], h_A, d_A[device], d_streams[device*streamsperdevice]);
     }
 
     #pragma omp parallel for private(device) num_threads(NUMTHREADS)
@@ -147,7 +156,7 @@ int main() {
     elapsedtime = timer.Stop();
     results += elapsedtime;
   }
-  printf("Tiled H2D took %f ms\n", results/reps);
+  printf("Tiled H2D : %7.0f ms\n", results/reps);
 
   kuhdaFillWithValue(h_A, 0.0);
 
@@ -157,7 +166,8 @@ int main() {
     #pragma omp parallel for private(device) num_threads(NUMTHREADS)
     for (device = 0; device < devicecount; device++){
       GPUCHECK(cudaSetDevice(device));
-      TileGPUToHost(destinations[device][0], destinations[device][1],destinations[device][2], destinations[device][3], d_A[device], h_A, d_streams[device*streamsperdevice]);
+      TileGPUToHost(destinations[device][0], destinations[device][1],destinations[device][2], 
+                    destinations[device][3], d_A[device], h_A, d_streams[device*streamsperdevice]);
     }
 
     #pragma omp parallel for private(device) num_threads(NUMTHREADS)
@@ -168,7 +178,77 @@ int main() {
     elapsedtime = timer.Stop();
     results += elapsedtime;
   }
-  printf("Tiled D2H took %f ms\n", results/reps);
+  printf("Tiled D2H : %7.0f ms\n", results/reps);
+
+  kuhdaTestForValue(h_A, 2.0, verbose);
+
+    /* 
+  #################################################################################################################
+  
+  3. cudaMemcpy2DAsync
+
+  #################################################################################################################
+  */
+
+  // H2D
+  results = 0.f;
+  kuhdaFillWithValue(h_A, 2.0);
+  for (rep = 0; rep < reps; rep ++){
+    timer.Start();
+    #pragma omp parallel for private(device) num_threads(NUMTHREADS)
+    for (device = 0; device < devicecount; device++){
+      GPUCHECK(cudaSetDevice(device));
+      // TileHostToGPU(destinations[device][0], destinations[device][1],destinations[device][2], 
+                    // destinations[device][3], h_A, d_A[device], d_streams[device*streamsperdevice]);
+    
+      GPUCHECK(cudaMemcpy2DAsync((void*)(&d_A[device]->data[0]),  // dst
+                                 tiledim*sizeof(double),          // dpitch
+                                 (const void*)(&h_A->data[destinations[device][0] * h_A->c + destinations[device][2]]), // src
+                                 n*sizeof(double),                // spitch
+                                 tiledim*sizeof(double),          // width
+                                 tiledim,                         // height
+                                 cudaMemcpyHostToDevice,  
+                                 d_streams[device*streamsperdevice]));
+    }
+    #pragma omp parallel for private(device) num_threads(NUMTHREADS)
+    for (device = 0; device < devicecount; device++){
+      GPUCHECK(cudaSetDevice(device));
+      GPUCHECK(cudaStreamSynchronize(d_streams[device*streamsperdevice]));
+    }
+    elapsedtime = timer.Stop();
+    results += elapsedtime;
+  }
+  printf("2DAsync H2D : %5.0f ms\n", results/reps);
+
+  kuhdaFillWithValue(h_A, 0.0);
+
+  // D2H
+  results = 0.f;
+  for (rep = 0; rep < reps; rep ++){
+    timer.Start();
+    #pragma omp parallel for private(device) num_threads(NUMTHREADS)
+    for (device = 0; device < devicecount; device++){
+      GPUCHECK(cudaSetDevice(device));
+
+      GPUCHECK(cudaMemcpy2DAsync((void*)(&h_A->data[destinations[device][0] * h_A->c + destinations[device][2]]), // dst
+                                  tiledim*sizeof(double),                 // dpitch
+                                  (const void*)(&d_A[device]->data[0]),   // src
+                                  n*sizeof(double),                       // spitch
+                                  tiledim*sizeof(double),                 // width
+                                  tiledim,                                // height
+                                  cudaMemcpyDeviceToHost,  
+                                  d_streams[device*streamsperdevice]));
+    }
+
+    #pragma omp parallel for private(device) num_threads(NUMTHREADS)
+    for (device = 0; device < devicecount; device++){
+      GPUCHECK(cudaSetDevice(device));
+      GPUCHECK(cudaStreamSynchronize(d_streams[device*streamsperdevice]));
+    }
+    elapsedtime = timer.Stop();
+    results += elapsedtime;
+  }
+  printf("2DAsync D2H : %7.0f ms\n", results/reps);
 
   kuhdaTestForValue(h_A, 2.0, verbose);
 
@@ -190,7 +270,7 @@ int main() {
       //gpuErrchk(cudaDeviceReset());
   }
   elapsedtime = timer.Stop();
-  printf("Destruction took %f ms\n", elapsedtime);
+  printf("Destruction :  %4.0f ms\n\n", elapsedtime);
 
   return 0;
 }
