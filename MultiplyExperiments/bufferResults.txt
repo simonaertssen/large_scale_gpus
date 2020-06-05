@@ -1,23 +1,36 @@
-linebuffer:
+linebuffer: AllDeviceMultiplication2
 GFLOPS for n = 16384 and x = 16384
-2125.38
-2218.21
-2118.03
-average of 
+results = 2125, 2218, 2118
+Adjusted for non-idle devices:
+results = 2364, 2324, 2677
 
 GFLOPS for n = 16384 and x = 8192
-1205.70
-1290.55
-1298.94
-average of 
+results = 1205, 1290, 1298
+Adjusted for non-idle devices:
+results = 1257, 1446, 1447
 
 
-full buffer:
+
+
+full buffer: AllDeviceMultiplication3
 GFLOPS for n = 16384 and x = 16384
-2613.58
-2458.57
-2545.02
-average of 
+results = 2613, 2458, 2545
+Adjusted for non-idle devices:
+results = 2718, 2549, 2619
+Adjusted for parallel buffer access (4 threads):
+results = 4450, 4399, 4304
+Adjusted for parallel buffer access (16 threads):
+results = 4860, 4871, 4876
+Adjusted for parallel buffer access (64 threads):
+results = 4766, 4793, 4775
+
 
 GFLOPS for n = 16384 and x = 8192
-doesn't work??
+Adjusted for non-idle devices:
+results = 1670, 1623, 1561
+Adjusted for parallel buffer access (4 threads):
+results = 3007, 2905, 2967
+Adjusted for parallel buffer access (16 threads):
+results = 3187, 3180, 3224
+Adjusted for parallel buffer access (32 threads):
+results = 2897, 2945, 3278
