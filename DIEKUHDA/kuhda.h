@@ -147,6 +147,7 @@ void TileGPUAddToHost(unsigned long rowstart, unsigned long rowstop, unsigned lo
 void kuhdaWarmup(int devicecount);
 void kuhdaWarmupDevice(int device); // for omp parallel calls
 size_t kuhdaAvailableMemoryOnCurrentDevice();
+unsigned int kuhdaAdjustTileSizeForAvailableMemory(int devicecount, unsigned int matrixsize, unsigned int tilesize);
 cudaError_t gpuAssert(cudaError_t code, const char *file, int line);
 cublasStatus_t cublasAssert(cublasStatus_t error, const char *file, int line);
 

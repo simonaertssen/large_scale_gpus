@@ -591,12 +591,35 @@ void kuhdaWarmupDevice(int device){
 	GPUCHECK(cudaDeviceSynchronize());
 }
 
-// Check available memory to reduce tile size when too large
+// Check available memory 
 size_t kuhdaAvailableMemoryOnCurrentDevice(){
 	size_t memfree, memtotal;
 	GPUCHECK(cudaMemGetInfo(&memfree, &memtotal));
 	return memfree;
 }
+
+// Check available memory to reduce tile size when too large
+unsigned int kuhdaAdjustTileSizeForAvailableMemory(int devicecount, unsigned int matrixsize, unsigned int tilesize){
+	int device, Q;
+	size_t availableMemory, queryMemory = (size_t) 3*tilesize*tilesize*sizeof(double), GBconv = 1024*1024*1024;
+ 
+    for (device = 0; device < devicecount; device++){
+        // Get device properties to measure available memory:
+        GPUCHECK(cudaSetDevice(device));
+        availableMemory = kuhdaAvailableMemoryOnCurrentDevice();
+        // printf("%4.2lf GB available on device %d, asking for %4.2lf GB..\n", (double)availableMemory/GBconv, device, (double) queryMemory/GBconv);
+        if (availableMemory < queryMemory){
+            // get surplus query memory and register how many more x's we will need, + 1 is neccessary for the integer division              
+            Q = (int) matrixsize/tilesize + (int)((double)(queryMemory - availableMemory)/queryMemory) + 1; 
+            //printf("Q was %d, now Q is %d\n", n/x, Q);
+            tilesize = (unsigned int) matrixsize/Q;
+            queryMemory = 3*tilesize*tilesize*sizeof(double);
+            printf("Not enough memory on device %d, changed x to %d. Now asking for %4.2lf GB..\n", device, tilesize, (double) queryMemory/GBconv);
+        } 
+	}
+	return tilesize;
+}
+
 
 
 /********************************************/
