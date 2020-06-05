@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "../DIEKUHDA/kuhda.h"
 #include "omp.h"
+#include "math.h"
 
 #define NUMTHREADS 4
 
@@ -57,7 +58,17 @@ int main(int argc, char* argv[]) {
 
     int abc, ABC = 3; // counters to loop through matrices
     int device, devicecount = 4;
-    int stream, streamsperdevice = 20; //(n/x)*(n/x);
+    int stream, streamsperdevice = (int) pow(2, (int) n/x);
+
+    /* The number of streams can be computed as:
+    n/x = 1:  1 streams per device, 1 loop    2**1 = 2
+    n/x = 2:  2 streams per device, 8 loops   2**2 = 4
+    n/x = 3:  7 streams per device, 27 loops  2**3 = 8
+    n/x = 4: 16 streams per device, 64 loops  2**4 = 16
+    n/x = 5: 32 streams per device, 125 loops 2**5 = 32
+    Take a maximum of 32.
+    */
+    streamsperdevice = streamsperdevice > 32 ? 32 : streamsperdevice;
 
     // parallel device warmup
     #pragma omp parallel for private(device) num_threads(devicecount)
@@ -77,9 +88,8 @@ int main(int argc, char* argv[]) {
     // Check dimensions with regards to the available memory:
     x = kuhdaAdjustTileSizeForAvailableMemory(devicecount, n, x);
 
-
     printf("Allocating tiles A, B and C on %d devices..\n", devicecount);
-    #pragma omp parallel for private(device, abc, stream) num_threads(NUMTHREADS)
+    //#pragma omp parallel for private(device, abc, stream) num_threads(NUMTHREADS)
     // Creat all dependencies:
     for (device = 0; device < devicecount; device++){
         GPUCHECK(cudaSetDevice(device));
@@ -92,16 +102,16 @@ int main(int argc, char* argv[]) {
         }
 
         for (stream = 0; stream < streamsperdevice; ++stream){
-            GPUCHECK(cudaStreamCreate(&d_streams[stream + streamsperdevice*device]));
-            //GPUCHECK(cudaEventCreate(&bufferIsFull[stream + streamsperdevice*device]));
-
+            // GPUCHECK(cudaStreamCreate(&d_streams[stream + streamsperdevice*device]));
+            GPUCHECK(cudaStreamCreate(&d_streams[device + stream*devicecount]));
+            // printf("Streamindices = %d\n", device + stream*devicecount);
         }
     }
 
     printf("Computation start..\n");
     timer.Start();
 
-    int streamindex = 0, currentdevice = 0;
+    int streamindex = 0, currentdevice = 0, loopindex = 0;
     int mtile = 0, ntile = 0, ktile = 0;
     // Loop over rows of A:
     //#pragma omp parallel for private(mtile)
@@ -112,26 +122,29 @@ int main(int argc, char* argv[]) {
             // Loop over columns of A and rows of B:
             for (ktile = 0; ktile < k/x; ++ktile){
                 // Set device by using integer division: 0, 0, 0, 1, 1, 1, ...
-                currentdevice = streamindex/streamsperdevice;
+                
+                // Was: currentdevice = streamindex/streamsperdevice;
                 GPUCHECK(cudaSetDevice(currentdevice));
+                // printf("Device = %d and stream = %d\n", currentdevice, streamindex);
 
                 TileHostToGPUBuff(mtile*x, (mtile+1)*x, ktile*x, (ktile+1)*x, h_A, d_All[currentdevice][0], d_streams[streamindex], membuffs[currentdevice][0]); // Tile A
                 TileHostToGPUBuff(ktile*x, (ktile+1)*x, ntile*x, (ntile+1)*x, h_B, d_All[currentdevice][1], d_streams[streamindex], membuffs[currentdevice][1]); // Tile B
 
-
                 // damn man dads not sooo fast.. yet
                 kuhdamm(d_All[currentdevice][0], d_All[currentdevice][1], d_All[currentdevice][2], d_streams[streamindex], handles[currentdevice]);
-
-                // kuhdaPrintDeviceM(d_All[currentdevice][2]);
 
                 // Get the tile back
                 TileGPUAddToHostBuff(mtile*x, (mtile+1)*x, ntile*x, (ntile+1)*x, d_All[currentdevice][2], h_C, d_streams[streamindex], membuffs[currentdevice][2]);
 
                 // Check whether current stream is available:
-                streamindex++;
-                streamindex = streamindex%streamcount;
+                // streamindex++;
+                // streamindex = streamindex%streamcount;
 
-                // kuhdaPrintM(h_C);
+                currentdevice++;
+                if (currentdevice != 0 && currentdevice%devicecount == 0) loopindex++;
+                currentdevice = currentdevice%devicecount;
+                streamindex = currentdevice + loopindex*devicecount;
+                streamindex = streamindex%streamcount;
             }
         }
     }
@@ -167,7 +180,8 @@ int main(int argc, char* argv[]) {
         }
 
         for (stream = 0; stream < streamsperdevice; ++stream){
-            GPUCHECK(cudaStreamDestroy(d_streams[stream + streamsperdevice*device]));
+            // GPUCHECK(cudaStreamDestroy(d_streams[stream + streamsperdevice*device]));
+            GPUCHECK(cudaStreamDestroy(d_streams[device + stream*devicecount]));
         }
         // Takes NO arguments
         GPUCHECK(cudaDeviceReset());
