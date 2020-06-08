@@ -219,13 +219,15 @@ struct Timer
 	}
 
 	~Timer() {
-    	cudaStreamDestroy(stream);
+	}
+
+	void Release(){
+		cudaStreamDestroy(stream);
 		cudaEventDestroy(start);
 		cudaEventDestroy(stop);
 	}
 
 	void Start() {
-		elapsedtime = 0.f;
 		cudaEventRecord(start, stream);
 	}
 

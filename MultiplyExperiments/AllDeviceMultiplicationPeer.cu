@@ -21,6 +21,18 @@ void TileGPUAddToHostBuff(unsigned long rowstart, unsigned long rowstop, unsigne
 
 
 int main(int argc, char* argv[]) {
+
+    // Permutation of the devices for NVLINK exploit
+    int d[4] = {0, 1, 3, 2};
+    int device, currentdevice, devicecount = 4;
+    cublasHandle_t handles[devicecount];
+    #pragma omp parallel for private(device, currentdevice) num_threads(NUMTHREADS)
+    for (device = 0; device < devicecount; device++){
+        currentdevice = d[device];
+        GPUCHECK(cudaSetDevice(currentdevice));
+        CUBLASCHECK(cublasCreate(&handles[currentdevice])); 
+    }
+
     // prepare timer:
     double start = omp_get_wtime(), end; 
 
@@ -52,10 +64,7 @@ int main(int argc, char* argv[]) {
 	matrix *h_B = kuhdaMallocM1(n, n); // diagonal B matrix
 	matrix *h_C = kuhdaMallocM(n, n); // empty C matrix
 
-    // Permutation of the devices for NVLINK exploit
-    int d[4] = {0, 1, 3, 2};
     int abc, ABC = 3; // counters to loop through matrices
-    int device, currentdevice, devicecount = 4;
     int stream, streamsperdevice = (int) pow(2, (int) n/x);
 
     /* The number of streams can be computed as:
@@ -66,26 +75,25 @@ int main(int argc, char* argv[]) {
     n/x = 5: 32 streams per device, 125 loops 2**5 = 32
     Take a maximum of 32.
     */
+    
     streamsperdevice = streamsperdevice > 32 ? 32 : streamsperdevice;
 
     // parallel device warmup
-    #pragma omp parallel for private(device) num_threads(devicecount)
-    for (device = 0; device < devicecount; device ++) kuhdaWarmupDevice(device);
+    // #pragma omp parallel for private(device) num_threads(NUMTHREADS)
+    // for (device = 0; device < devicecount; device ++) kuhdaWarmupDevice(device);
     
-    printf("streamsperdevice = %d\n", streamsperdevice);
     GPUCHECK(cudaGetDeviceCount(&devicecount));
     matrix *d_All[devicecount][ABC];
 
     int streamcount = streamsperdevice*devicecount;
     cudaStream_t d_streams[streamcount];
     cudaStream_t p_streams[TILES];
-    cublasHandle_t handles[devicecount];
     matrix *membuffs[devicecount];
 
     MatMulTimer timer;
 
     // Check dimensions with regards to the available memory:
-    x = kuhdaAdjustTileSizeForAvailableMemory(devicecount, n, x);
+    //x = kuhdaAdjustTileSizeForAvailableMemory(devicecount, n, x);
 
     printf("Allocating tiles A, B and C on %d devices..\n", devicecount);
     #pragma omp parallel for private(device, currentdevice, abc, stream) num_threads(NUMTHREADS)
@@ -93,7 +101,7 @@ int main(int argc, char* argv[]) {
     for (device = 0; device < devicecount; device++){
         currentdevice = d[device];
         GPUCHECK(cudaSetDevice(currentdevice));
-        CUBLASCHECK(cublasCreate(&handles[currentdevice])); 
+        // CUBLASCHECK(cublasCreate(&handles[currentdevice])); 
 
         membuffs[currentdevice] = kuhdaMallocMP(x, x);
 
@@ -122,14 +130,15 @@ int main(int argc, char* argv[]) {
     int streamindex = 0, loopindex = 0;
     int mtile = 0, ntile = 0, ktile = 0;
     // Loop over rows of A:
-    //#pragma omp parallel for private(mtile)
+    // #pragma omp parallel for private(mtile) num_threads(NUMTHREADSBUFF)
     for (mtile = 0; mtile < m/x; ++mtile){
         // Loop over columns of B:
+        // #pragma omp parallel for private(ntile) num_threads(NUMTHREADS)
         for (ntile = 0; ntile < n/x; ++ntile){
-            // #pragma omp parallel for private(ktile, device, currentdevice) num_threads(NUMTHREADS)
+            // #pragma omp parallel for private(ktile, device, currentdevice) num_threads(2)
             // Loop over columns of A and rows of B:
             for (ktile = 0; ktile < k/x; ++ktile){
-                // Set device by using integer division: 0, 0, 0, 1, 1, 1, ...
+                // Set device by using integer division: 0, 1, 3, 2, 0, 1, ...
                 //currentdevice = streamindex/streamsperdevice;
                 //printf("device %d becomes device %d\n", device, d[device]);
 
@@ -147,7 +156,6 @@ int main(int argc, char* argv[]) {
 
                 if (mtile < 1){
                     TileHostToGPUBuff(ktile*x, (ktile+1)*x, ntile*x, (ntile+1)*x, h_B, d_All[currentdevice][1], d_streams[streamindex], membuffs[currentdevice]); // Tile B
-                    GPUCHECK(cudaStreamSynchronize(d_streams[streamindex]));
                 }
 
                 // damn man dads not sooo fast.. yet
