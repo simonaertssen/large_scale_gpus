@@ -5,7 +5,6 @@
 #define NUMTHREADS 4
 #define NUMTHREADSBUFF 16
 
-
 /*
 This script contains the same functionality as AllDeviceMultiplication2 but with a full buffer
 run with
@@ -19,29 +18,31 @@ void TileGPUAddToHostBuff(unsigned long rowstart, unsigned long rowstop, unsigne
 
 
 int main(int argc, char* argv[]) {
+    // prepare timer:
+    double start = omp_get_wtime(), end; 
 
     // set matrix size
     unsigned int n = 5000;
     if (argc > 1){
         n = (unsigned int)atoi(argv[1]);
-        printf("matrix dimension = %lu, ", n);
         if (n > 40960 ) {
             printf("matrix dimension too large..\n");
             return -1;
         }
     }
+    printf("Matrix dimension = %lu.. \n", n);
     unsigned int m = n, k = n;
 
     // set tile size
     unsigned int x = n/2;
     if (argc > 2){
         x = (unsigned int)atoi(argv[2]);
-        printf("block size = %lu\n", x);
         if (x > n ) {
             x = n/2;
-            printf("block size too large, setting block size to %d..\n", x);
+            printf("Block size too large, setting block size to %d..\n", x);
         }
     }
+    printf("Block size = %lu..\n", x);
 
 	// Containers for host and device matrices
 	matrix *h_A = kuhdaMallocM1(n, n); // diagonal A matrix
@@ -66,14 +67,13 @@ int main(int argc, char* argv[]) {
     #pragma omp parallel for private(device) num_threads(devicecount)
     for (device = 0; device < devicecount; device ++) kuhdaWarmupDevice(device);
     
-    printf("streamsperdevice = %d\n", streamsperdevice);
     GPUCHECK(cudaGetDeviceCount(&devicecount));
     matrix *d_All[devicecount][ABC];
 
     int streamcount = streamsperdevice*devicecount;
     cudaStream_t d_streams[streamcount];
     cublasHandle_t handles[devicecount];
-    matrix *membuffs[devicecount][2];
+    matrix *membuffs[devicecount];
 
     MatMulTimer timer;
 
@@ -87,8 +87,7 @@ int main(int argc, char* argv[]) {
         GPUCHECK(cudaSetDevice(device));
         CUBLASCHECK(cublasCreate(&handles[device])); 
 
-        membuffs[device][0] = kuhdaMallocMP(x, x);
-        membuffs[device][1] = kuhdaMallocMP(x, x);
+        membuffs[device] = kuhdaMallocMP(x, x);
 
         // GPUCHECK(cudaHostAlloc(&membuffs[device][0], x*x*sizeof(double), cudaHostAllocPortable));
         // GPUCHECK(cudaHostAlloc(&membuffs[device][1], x*x*sizeof(double), cudaHostAllocPortable));
@@ -119,8 +118,8 @@ int main(int argc, char* argv[]) {
                 //currentdevice = streamindex/streamsperdevice;
                 GPUCHECK(cudaSetDevice(currentdevice));
 
-                TileHostToGPUBuff(mtile*x, (mtile+1)*x, ktile*x, (ktile+1)*x, h_A, d_All[currentdevice][0], d_streams[streamindex], membuffs[currentdevice][0]); // Tile A
-                TileHostToGPUBuff(ktile*x, (ktile+1)*x, ntile*x, (ntile+1)*x, h_B, d_All[currentdevice][1], d_streams[streamindex], membuffs[currentdevice][1]); // Tile B
+                TileHostToGPUBuff(mtile*x, (mtile+1)*x, ktile*x, (ktile+1)*x, h_A, d_All[currentdevice][0], d_streams[streamindex], membuffs[currentdevice]); // Tile A
+                TileHostToGPUBuff(ktile*x, (ktile+1)*x, ntile*x, (ntile+1)*x, h_B, d_All[currentdevice][1], d_streams[streamindex], membuffs[currentdevice]); // Tile B
 
                 // We are using two different streams to try out
                 GPUCHECK(cudaStreamSynchronize(d_streams[streamindex]));
@@ -132,7 +131,7 @@ int main(int argc, char* argv[]) {
                 // kuhdaPrintDeviceM(d_All[currentdevice][2]);
 
                 // Get the tile back
-                TileGPUAddToHostBuff(mtile*x, (mtile+1)*x, ntile*x, (ntile+1)*x, d_All[currentdevice][2], h_C, d_streams[streamindex], membuffs[currentdevice][0]);
+                TileGPUAddToHostBuff(mtile*x, (mtile+1)*x, ntile*x, (ntile+1)*x, d_All[currentdevice][2], h_C, d_streams[streamindex], membuffs[currentdevice]);
 
                 currentdevice++;
                 if (currentdevice != 0 && currentdevice%devicecount == 0) loopindex++;
@@ -170,8 +169,7 @@ int main(int argc, char* argv[]) {
         GPUCHECK(cudaSetDevice(device));
         CUBLASCHECK(cublasDestroy(handles[device]));
 
-        kuhdaFreeM(membuffs[device][0], 'p');
-        kuhdaFreeM(membuffs[device][1], 'p');
+        kuhdaFreeM(membuffs[device], 'p');
         // GPUCHECK(cudaFreeHost(membuffs[device][0]));
         // GPUCHECK(cudaFreeHost(membuffs[device][1]));
 
@@ -186,6 +184,8 @@ int main(int argc, char* argv[]) {
         GPUCHECK(cudaDeviceReset());
     }
 
+    end = omp_get_wtime(); 
+    printf("Script took %.1f seconds \n", end - start);
 	return 0;
 }
 
