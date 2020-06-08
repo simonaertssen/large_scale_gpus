@@ -37,3 +37,8 @@ Adjusted for parallel buffer access (16 threads):
 results = 3187, 3180, 3224
 Adjusted for parallel buffer access (32 threads):
 results = 2897, 2945, 3278
+
+
+
+full buffer: AllDeviceMultiplicationPeer: 
+results = 3668, 3670, 3590

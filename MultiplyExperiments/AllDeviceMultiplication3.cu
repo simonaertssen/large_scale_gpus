@@ -3,7 +3,7 @@
 #include "omp.h"
 
 #define NUMTHREADS 4
-#define NUMTHREADSBUFF 32
+#define NUMTHREADSBUFF 16
 
 
 /*
