@@ -3,12 +3,15 @@ GFLOPS for n = 16384 and x = 16384
 results = 2125, 2218, 2118
 Adjusted for non-idle devices:
 results = 2364, 2324, 2677
+Adjusted for parallel buffer access (16 threads):
+results = 2716, 2735, 2697
 
 GFLOPS for n = 16384 and x = 8192
 results = 1205, 1290, 1298
 Adjusted for non-idle devices:
 results = 1257, 1446, 1447
-
+Adjusted for parallel buffer access (16 threads):
+results = 1544, 1584, 1402
 
 
 

@@ -4,6 +4,7 @@
 #include "math.h"
 
 #define NUMTHREADS 4
+#define NUMTHREADSBUFF 16
 
 /*
 With this script we are following some of the ideas from Jochen Kreuz to perform a tiled multiplication using cublas.
@@ -206,6 +207,7 @@ void TileHostToGPUBuff(	unsigned long rowstart, unsigned long rowstop, unsigned 
 
     // 'strided' copy, row by row
     for (i=rowstart; i<rowstop; ++i){
+        #pragma omp parallel for private(j) num_threads(NUMTHREADSBUFF)
         for (j=colstart; j<colstop; ++j){
             // fill memacc with host-matrix data one (tile-)row at a time:
             memacc[j-colstart] = h_matrix->data[i * h_matrix->c + j];
@@ -235,7 +237,7 @@ void TileGPUAddToHostBuff(unsigned long rowstart, unsigned long rowstop, unsigne
         GPUCHECK(cudaMemcpyAsync(memacc, (void*) (&d_tile->data[0] + (cols * (i-rowstart))), cols*sizeof(double), cudaMemcpyDeviceToHost, stream));
         // failure = GPUCHECK(cudaMemcpy(memacc, (void*) (&d_tile->data[0] + (cols * (i-rowstart))), cols*sizeof(double), cudaMemcpyDeviceToHost));
         GPUCHECK(cudaStreamSynchronize(stream));
-
+        #pragma omp parallel for private(j) num_threads(NUMTHREADSBUFF)
         for (j=colstart; j<colstop; ++j){
             h_matrix->data[i * h_matrix->c + j] += memacc[j-colstart];
         }
