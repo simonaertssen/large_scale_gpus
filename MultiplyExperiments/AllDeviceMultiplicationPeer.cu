@@ -21,29 +21,31 @@ void TileGPUAddToHostBuff(unsigned long rowstart, unsigned long rowstop, unsigne
 
 
 int main(int argc, char* argv[]) {
+    // prepare timer:
+    double start = omp_get_wtime(), end; 
 
     // set matrix size
     unsigned int n = 5000;
     if (argc > 1){
         n = (unsigned int)atoi(argv[1]);
-        printf("matrix dimension = %lu, ", n);
         if (n > 40960 ) {
             printf("matrix dimension too large..\n");
             return -1;
         }
     }
+    printf("Matrix dimension = %lu.. \n", n);
     unsigned int m = n, k = n;
 
     // set tile size
     unsigned int x = n/2;
     if (argc > 2){
         x = (unsigned int)atoi(argv[2]);
-        printf("block size = %lu\n", x);
         if (x > n ) {
             x = n/2;
-            printf("block size too large, setting block size to %d..\n", x);
+            printf("Block size too large, setting block size to %d..\n", x);
         }
     }
+    printf("Block size = %lu..\n", x);
 
 	// Containers for host and device matrices
 	matrix *h_A = kuhdaMallocM1(n, n); // diagonal A matrix
@@ -53,7 +55,7 @@ int main(int argc, char* argv[]) {
     // Permutation of the devices for NVLINK exploit
     int d[4] = {0, 1, 3, 2};
     int abc, ABC = 3; // counters to loop through matrices
-    int device, currentdevice, destination, devicecount = 4;
+    int device, currentdevice, devicecount = 4;
     int stream, streamsperdevice = (int) pow(2, (int) n/x);
 
     /* The number of streams can be computed as:
@@ -207,6 +209,8 @@ int main(int argc, char* argv[]) {
         GPUCHECK(cudaDeviceReset());
     }
 
+    end = omp_get_wtime(); 
+    printf("Script took %.1f seconds \n", end - start);
 	return 0;
 }
 
