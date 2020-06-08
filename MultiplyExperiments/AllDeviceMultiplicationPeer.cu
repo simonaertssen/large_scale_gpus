@@ -107,15 +107,9 @@ int main(int argc, char* argv[]) {
         if (currentdevice == 0 || currentdevice == 1) {
             GPUCHECK(cudaStreamCreate(&p_streams[currentdevice]));
             GPUCHECK(cudaStreamCreate(&p_streams[currentdevice + 2]));
-        }
-        // Set accessibility:
-        for (destination = 0; destination < devicecount; destination++){
-            if (currentdevice == destination) continue;
-            int accessible = 0;
-            GPUCHECK(cudaDeviceCanAccessPeer(&accessible, destination, currentdevice));
-			if (accessible == 0){
-				printf("Device %d cannot access device %d\n", destination, currentdevice);
-            }
+
+            // Set accessibility:
+            cudaDeviceEnablePeerAccess((currentdevice + 1)%2, 0);
         }
     }
 
