@@ -7,7 +7,7 @@
 /*
 This script builds on AllDeviceMultiplication3.cu, but takes into account the comments of HH (11/06/2020).
 Full concurrency was previously not attained due to failing parallellism in the main for loops. Here, we adjust for that concurrency.
-This is the 'naive' implementation of multi-gpu computing: only H2D and D2H comms.
+This is the 'naive' implementation of multi-gpu computing: only H2D and D2H comms, and only up to four tiles.
 
 run with
 nvcc -O3 -Xcompiler -fopenmp -lcublas ../DIEKUHDA/kuhda.cu ADM_NaiveBuff.cu && ./a.out 1000 500
@@ -46,7 +46,7 @@ int main(int argc, char* argv[]) {
             // In this case, x exceeds the size necessary for 32 GB of data on a device: sqrt(32 * pow(1000, 3) / 8) = 63245
             x /= 2;
         }
-    }
+    }    
     printf("Matrix dimension = %lu, block size = %lu.. \n", n, x);
 
     // Check dimensions with regards to the available memory:
@@ -61,10 +61,16 @@ int main(int argc, char* argv[]) {
     int abc, ABC = 3; 
     matrix *d_All[devicecount][ABC];   // matrix tiles on each device
 
-    // Counters for streams
-    int stream, streamsperdevice = (int) pow(2, (int) n/x);
-    streamsperdevice = streamsperdevice > 32 ? 32 : streamsperdevice;
+    // For numtiles tiles in each dimension, we have pow(numtiles, 3) number of operations on tiles;
+    int numtiles = n/x, numtileops = pow(numtiles, 3), numtileopsperdevice = max(1, (int)ceil(numtileops/devicecount));
+    printf("numtileops = %d\n", numtileops);
+    printf("numtileopsperdevice = %d\n", numtileopsperdevice);
+
+    // Counters for streams: number of streams is number of operations per device
+    int maxstreamsperdevice = 32, stream, streamsperdevice = numtileopsperdevice;
+    streamsperdevice = streamsperdevice > maxstreamsperdevice ? maxstreamsperdevice : streamsperdevice;
     int streamcount = streamsperdevice*devicecount;
+    printf("streamsperdevice = %d\n", streamsperdevice);
 
     // Parallel device warmup
     #pragma omp parallel for private(device) num_threads(devicecount)
@@ -77,6 +83,7 @@ int main(int argc, char* argv[]) {
 
     MatMulTimer timer;
 
+    // Parallel device memory and dependency allocation
     printf("Allocating tiles A, B and C on %d devices..\n", devicecount);
     #pragma omp parallel for private(device, abc, stream) num_threads(devicecount)
     // Creat all dependencies:
@@ -91,17 +98,40 @@ int main(int argc, char* argv[]) {
         }
         
         for (stream = 0; stream < streamsperdevice; ++stream){
-            GPUCHECK(cudaStreamCreate(&d_streams[device + stream*devicecount]));
+            // Device O contains streams 0, 1, 2, ..., device 1 contains streams streamsperdevice, streamsperdevice + 1, ... 
+            GPUCHECK(cudaStreamCreate(&d_streams[device*streamsperdevice + stream]));
         }
     }
+
+    // Main loop counters:
+    int tileopondevice, Arow, Acol, Brow, Bcol;
+    int mtile = 0, ntile = 0, ktile = 0;
+    int streamindex = 0, currentdevice = 0, loopindex = 0;
 
     printf("Computation start..\n");
     timer.Start();
 
-    int streamindex = 0, currentdevice = 0, loopindex = 0;
-    int mtile = 0, ntile = 0, ktile = 0;
+    // Parallel device multiplication loop. Total number of calls = 2 * numtiles
+    // #pragma omp parallel for private(device) num_threads(devicecount)
+    for (device = 0; device < devicecount; device++){
+        GPUCHECK(cudaSetDevice(device));
+
+        // Count what tile operation we are currently dealing with
+        for (tileopondevice = 0; tileopondevice < numtileopsperdevice; tileopondevice++){
+            Arow = tileopondevice;
+            Acol = device%2;
+            Brow = device%2;
+            Bcol = tileopondevice;
+            printf("device %d: A (%d, %d) and B (%d, %d)\n", device, Arow, Acol, Brow, Bcol);
+            
+            //TileHostToGPUBuff(Arow*x, (Arow+1)*x, Acol*x, (Acol+1)*x, h_A, d_All[device][0], d_streams[streamindex], membuffs[device]); // Tile A
+
+        }
+    }
+
     // Loop over rows of A:
     //#pragma omp parallel for private(mtile)
+    /*
     for (mtile = 10; mtile < m/x; ++mtile){
         // Loop over columns of B:
         for (ntile = 10; ntile < n/x; ++ntile){
@@ -132,6 +162,7 @@ int main(int argc, char* argv[]) {
             }
         }
     }
+    */
 
     // Final synchronization:
     #pragma omp parallel for private(device, abc, stream) num_threads(devicecount)
@@ -169,7 +200,7 @@ int main(int argc, char* argv[]) {
         }
 
         for (stream = 0; stream < streamsperdevice; ++stream){
-            GPUCHECK(cudaStreamDestroy(d_streams[device + stream*devicecount]));
+            GPUCHECK(cudaStreamDestroy(d_streams[device*streamsperdevice + stream]));
         }
         // Takes NO arguments
         GPUCHECK(cudaDeviceReset());
