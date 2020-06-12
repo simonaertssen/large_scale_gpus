@@ -55,9 +55,18 @@ int main(int argc, char* argv[]) {
     x = kuhdaAdjustTileSizeForAvailableMemory(devicecount, n, x);
 
 	// Containers for host and device matrices
-	matrix *h_A = kuhdaMallocM1(n, n); // matrix A filled with ones
-	matrix *h_B = kuhdaMallocM1(n, n); // matrix B filled with ones
-    matrix *h_C = kuhdaMallocM(n, n);  // matrix C will contain results: n in every spot due to type of A and B
+	matrix *h_A = kuhdaMallocMdiag(n, n); // matrix A as a diagonal matrix
+    matrix *h_B = kuhdaMallocM(n, n);     // matrix B to be filled with specific values for specific testing
+    matrix *h_C = kuhdaMallocM(n, n);     // matrix C will contain results: same values at each spot as in b
+
+    unsigned long i, j;
+    #pragma omp parallel for
+	for (i = 0; i < h_B->r; ++i){
+		for (j = 0; j < h_B->c; ++j){
+            h_B->data[i*h_B->c + j] = (i + j) * 0.1 + i;
+        }
+    }
+    
     int abc, ABC = 3; 
     matrix *d_All[devicecount][ABC];   // matrix tiles on each device
 
@@ -110,7 +119,7 @@ int main(int argc, char* argv[]) {
     timer.Start();
 
     // Parallel device multiplication loop. Total number of calls = 2 * numtiles
-    #pragma omp parallel for private(device, streamindex, tileopondevice, Arow, Acol, Brow, Bcol, Crow, Ccol) num_threads(devicecount)
+    // #pragma omp parallel for private(device, streamindex, tileopondevice, Arow, Acol, Brow, Bcol, Crow, Ccol) num_threads(devicecount)
     for (device = 0; device < devicecount; device++){
         GPUCHECK(cudaSetDevice(device));
 
@@ -119,7 +128,7 @@ int main(int argc, char* argv[]) {
             streamindex = (device*streamsperdevice + tileopondevice)%streamcount;
             // printf("streamindex = %d\n", streamindex);
 
-            Arow = tileopondevice; Acol = device%2; Brow = device%2; Bcol = tileopondevice; Crow = device/2; Ccol = device%2; 
+            Arow = tileopondevice; Acol = device%2; Brow = tileopondevice; Bcol = device/2; Crow = tileopondevice; Ccol = device/2; 
             // printf("device %d: A (%d, %d) and B (%d, %d) and C (%d, %d)\n", device, Arow, Acol, Brow, Bcol, Crow, Ccol);
 
             TileHostToGPUBuff(Arow*x, (Arow+1)*x, Acol*x, (Acol+1)*x, h_A, d_All[device][0], d_streams[streamindex], membuffs[device]); // Tile A
@@ -146,14 +155,26 @@ int main(int argc, char* argv[]) {
 
     timer.Stop();
     double timingResult = timer.GFLOPS_DGEMM(m, n, k);
-    printf("GFLOPS = %.0lf\n", timingResult);
+    printf("GFLOPS = %.0lf..\n", timingResult);
 
     // Test the result for mistakes
-    // kuhdaPrintM(h_C);
-	kuhdaTestM(0, n, 0, n, h_C);
+    printf("Checking results. ");
+    double abserror = 0.0, totalerror = 0.0;
+    #pragma omp parallel for
+	for (i = 0; i < h_B->r; ++i){
+		for (j = 0; j < h_B->c; ++j){
+            abserror = fabs(h_B->data[i*h_B->c + j] - h_C->data[i*h_C->c + j]);
+            totalerror += abserror;
+            if (abserror > 10e-5) {
+                printf("Failure: B[%d] = %1.4e != C[%d] = %1.4e", i*h_B->c + j, h_B->data[i*h_B->c + j], i*h_C->c + j, h_C->data[i*h_B->c + j]);
+                break;
+            }
+        }
+    }
+    printf("Succes: total error of %6.2e\n", totalerror);
 
     // Free all dependencies
-    printf("Cleaning up ..\n");
+    printf("Cleaning up..\n");
     GPUCHECK(cudaSetDevice(0));
 
 	kuhdaFreeM(h_A, 'k');
