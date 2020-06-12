@@ -722,25 +722,13 @@ int kuhdamm(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, cudaStream_t s
 	// Data for the computations:
 	unsigned int m = d_A_tile->r, k = d_A_tile->c, n = d_C_tile->c;
 	double alpha = 1.0, beta  = 0.0;
-	// cublasHandle_t handle;
-	// int failure = cublasCreate(&handle);
-	// if (failure != 0){
-	// 	FAIL_ERR(failure);
-	// 	return -1;
-	// }
+	
 
 	CUBLASCHECK(cublasSetStream(handle, stream));
-	// if (failure != 0){
-	// 	FAIL_ERR(failure);
-	// 	return -1;
-	// }
+	
 	CUBLASCHECK(cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, &alpha,
 			d_A_tile->data, m, d_B_tile->data, k, &beta, d_C_tile->data, m));
-	// if (failure != 0){
-	// 	FAIL_ERR(failure);
-	// 	return -1;
-	// }
-	// cublasDestroy(handle);
+	
 	return 0;
 }
 
