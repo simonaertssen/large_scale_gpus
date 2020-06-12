@@ -2,13 +2,15 @@
 #include "../DIEKUHDA/kuhda.h"
 #include "omp.h"
 
-#define NUMTHREADS 4
 #define NUMTHREADSBUFF 16
 
 /*
-This script contains the same functionality as AllDeviceMultiplication2 but with a full buffer
+This script builds on AllDeviceMultiplication3.cu, but takes into account the comments of HH (11/06/2020).
+Full concurrency was previously not attained due to failing parallellism in the main for loops. Here, we adjust for that concurrency.
+This is the 'naive' implementation of multi-gpu computing: only H2D and D2H comms.
+
 run with
-nvcc -O3 -Xcompiler -fopenmp -lcublas ../DIEKUHDA/kuhda.cu AllDeviceMultiplication3.cu && ./a.out 1000 500
+nvcc -O3 -Xcompiler -fopenmp -lcublas ../DIEKUHDA/kuhda.cu ADM_NaiveBuff.cu && ./a.out 1000 500
 */
 
 void TileHostToGPUBuff(	unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, 
@@ -18,79 +20,71 @@ void TileGPUAddToHostBuff(unsigned long rowstart, unsigned long rowstop, unsigne
 
 
 int main(int argc, char* argv[]) {
-    // prepare timer:
+    // Prepare timer for full length of this script:
     double start = omp_get_wtime(), end; 
 
-    // set matrix size
+    // Set matrix size
     unsigned int n = 5000;
     if (argc > 1){
         n = (unsigned int)atoi(argv[1]);
-        if (n > 40960 ) {
-            printf("matrix dimension too large..\n");
+        if (n >= 73029) {
+            // In this case, n exceeds the size necessary for 128 GB of data on the host for three matrices: sqrt(128 * pow(1000, 3) / 8 / 3) = 73029
+            printf("Matrix dimension too large, setting matrix size to %d..\n", n);
             return -1;
         }
     }
-    printf("Matrix dimension = %lu.. \n", n);
     unsigned int m = n, k = n;
 
-    // set tile size
+    // Set tile size
     unsigned int x = n/2;
     if (argc > 2){
         x = (unsigned int)atoi(argv[2]);
         if (x > n ) {
             x = n/2;
             printf("Block size too large, setting block size to %d..\n", x);
+        } else if (x >= 63245){
+            // In this case, x exceeds the size necessary for 32 GB of data on a device: sqrt(32 * pow(1000, 3) / 8) = 63245
+            x /= 2;
         }
     }
-    printf("Block size = %lu..\n", x);
+    printf("Matrix dimension = %lu, block size = %lu.. \n", n, x);
+
+    // Check dimensions with regards to the available memory:
+    int device, devicecount;
+    GPUCHECK(cudaGetDeviceCount(&devicecount));
+    x = kuhdaAdjustTileSizeForAvailableMemory(devicecount, n, x);
 
 	// Containers for host and device matrices
-	matrix *h_A = kuhdaMallocM1(n, n); // diagonal A matrix
-	matrix *h_B = kuhdaMallocM1(n, n); // diagonal B matrix
-	matrix *h_C = kuhdaMallocM(n, n); // empty C matrix
+	matrix *h_A = kuhdaMallocM1(n, n); // matrix A filled with ones
+	matrix *h_B = kuhdaMallocM1(n, n); // matrix B filled with ones
+    matrix *h_C = kuhdaMallocM(n, n);  // matrix C will contain results: n in every spot due to type of A and B
+    int abc, ABC = 3; 
+    matrix *d_All[devicecount][ABC];   // matrix tiles on each device
 
-    int abc, ABC = 3; // counters to loop through matrices
-    int device, devicecount = 4;
+    // Counters for streams
     int stream, streamsperdevice = (int) pow(2, (int) n/x);
-
-    /* The number of streams can be computed as:
-    n/x = 1:  1 streams per device, 1 loop    2**1 = 2
-    n/x = 2:  2 streams per device, 8 loops   2**2 = 4
-    n/x = 3:  7 streams per device, 27 loops  2**3 = 8
-    n/x = 4: 16 streams per device, 64 loops  2**4 = 16
-    n/x = 5: 32 streams per device, 125 loops 2**5 = 32
-    Take a maximum of 32.
-    */
     streamsperdevice = streamsperdevice > 32 ? 32 : streamsperdevice;
+    int streamcount = streamsperdevice*devicecount;
 
-    // parallel device warmup
+    // Parallel device warmup
     #pragma omp parallel for private(device) num_threads(devicecount)
     for (device = 0; device < devicecount; device ++) kuhdaWarmupDevice(device);
     
-    GPUCHECK(cudaGetDeviceCount(&devicecount));
-    matrix *d_All[devicecount][ABC];
-
-    int streamcount = streamsperdevice*devicecount;
+    // Cuda dependencies
     cudaStream_t d_streams[streamcount];
     cublasHandle_t handles[devicecount];
     matrix *membuffs[devicecount];
 
     MatMulTimer timer;
 
-    // Check dimensions with regards to the available memory:
-    x = kuhdaAdjustTileSizeForAvailableMemory(devicecount, n, x);
-
     printf("Allocating tiles A, B and C on %d devices..\n", devicecount);
-    #pragma omp parallel for private(device, abc, stream) num_threads(NUMTHREADS)
+    #pragma omp parallel for private(device, abc, stream) num_threads(devicecount)
     // Creat all dependencies:
     for (device = 0; device < devicecount; device++){
         GPUCHECK(cudaSetDevice(device));
         CUBLASCHECK(cublasCreate(&handles[device])); 
 
         membuffs[device] = kuhdaMallocMP(x, x);
-
-        // GPUCHECK(cudaHostAlloc(&membuffs[device][0], x*x*sizeof(double), cudaHostAllocPortable));
-        // GPUCHECK(cudaHostAlloc(&membuffs[device][1], x*x*sizeof(double), cudaHostAllocPortable));
 
         for (abc = 0; abc < ABC; ++abc){
             d_All[device][abc] = kuhdaMallocDeviceM(x, x);
@@ -108,12 +102,12 @@ int main(int argc, char* argv[]) {
     int mtile = 0, ntile = 0, ktile = 0;
     // Loop over rows of A:
     //#pragma omp parallel for private(mtile)
-    for (mtile = 0; mtile < m/x; ++mtile){
+    for (mtile = 10; mtile < m/x; ++mtile){
         // Loop over columns of B:
-        for (ntile = 0; ntile < n/x; ++ntile){
+        for (ntile = 10; ntile < n/x; ++ntile){
             // #pragma omp parallel for private(ktile) num_threads(NUMTHREADS)
             // Loop over columns of A and rows of B:
-            for (ktile = 0; ktile < k/x; ++ktile){
+            for (ktile = 10; ktile < k/x; ++ktile){
                 // Set device by using integer division: 0, 0, 0, 1, 1, 1, ...
                 //currentdevice = streamindex/streamsperdevice;
                 GPUCHECK(cudaSetDevice(currentdevice));
@@ -123,12 +117,9 @@ int main(int argc, char* argv[]) {
 
                 // We are using two different streams to try out
                 GPUCHECK(cudaStreamSynchronize(d_streams[streamindex]));
-                GPUCHECK(cudaStreamSynchronize(d_streams[streamindex]));
 
                 // damn man dads not sooo fast.. yet
                 kuhdamm(d_All[currentdevice][0], d_All[currentdevice][1], d_All[currentdevice][2], d_streams[streamindex], handles[currentdevice]);
-
-                // kuhdaPrintDeviceM(d_All[currentdevice][2]);
 
                 // Get the tile back
                 TileGPUAddToHostBuff(mtile*x, (mtile+1)*x, ntile*x, (ntile+1)*x, d_All[currentdevice][2], h_C, d_streams[streamindex], membuffs[currentdevice]);
@@ -144,17 +135,14 @@ int main(int argc, char* argv[]) {
         }
     }
 
-
     timer.Stop();
     double timingResult = timer.GFLOPS_DGEMM(m, n, k);
     printf("GFLOPS = %.0lf\n", timingResult);
 
-    //h_C->data[100] = 578.0;
     // Test the result for mistakes
-	kuhdaTestM(0, n, 0, n, h_C);
-    //printf("%lf  %lf \n%lf  %lf \n", h_C->data[(n-1)*x-1], h_C->data[(n-1)*x], h_C->data[n*x-1], h_C->data[n*x]);
+	// kuhdaTestM(0, n, 0, n, h_C);
 
-    // Free all
+    // Free all dependencies
     printf("Cleaning up ..\n");
     GPUCHECK(cudaSetDevice(0));
 
@@ -164,14 +152,12 @@ int main(int argc, char* argv[]) {
 
     timer.Release();
 
-    #pragma omp parallel for private(device, abc, stream) num_threads(NUMTHREADS)
+    #pragma omp parallel for private(device, abc, stream) num_threads(devicecount)
     for (device = 0; device < devicecount; device++){
         GPUCHECK(cudaSetDevice(device));
         CUBLASCHECK(cublasDestroy(handles[device]));
 
         kuhdaFreeM(membuffs[device], 'p');
-        // GPUCHECK(cudaFreeHost(membuffs[device][0]));
-        // GPUCHECK(cudaFreeHost(membuffs[device][1]));
 
         for (abc = 0; abc < ABC; ++abc){
             kuhdaFreeM(d_All[device][abc], 'c');
@@ -185,7 +171,7 @@ int main(int argc, char* argv[]) {
     }
 
     end = omp_get_wtime(); 
-    printf("Script took %.1f seconds \n", end - start);
+    printf("Script took %.1f seconds.. \n", end - start);
 	return 0;
 }
 
