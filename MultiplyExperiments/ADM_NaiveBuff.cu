@@ -129,11 +129,16 @@ int main(int argc, char* argv[]) {
                 currentdevice = currentdevice%devicecount;
                 streamindex = currentdevice + loopindex*devicecount;
                 streamindex = streamindex%streamcount;
-
-                // kuhdaPrintM(h_C);
             }
         }
     }
+
+    // Final synchronization:
+    #pragma omp parallel for private(device, abc, stream) num_threads(devicecount)
+    for (device = 0; device < devicecount; device ++){
+        cudaSetDevice(device);
+        cudaDeviceSynchronize();
+      }
 
     timer.Stop();
     double timingResult = timer.GFLOPS_DGEMM(m, n, k);
