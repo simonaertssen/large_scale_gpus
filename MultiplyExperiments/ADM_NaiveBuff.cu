@@ -104,65 +104,38 @@ int main(int argc, char* argv[]) {
     }
 
     // Main loop counters:
-    int tileopondevice, Arow, Acol, Brow, Bcol;
-    int mtile = 0, ntile = 0, ktile = 0;
-    int streamindex = 0, currentdevice = 0, loopindex = 0;
+    int streamindex, tileopondevice, Arow, Acol, Brow, Bcol, Crow, Ccol;
 
     printf("Computation start..\n");
     timer.Start();
 
     // Parallel device multiplication loop. Total number of calls = 2 * numtiles
-    // #pragma omp parallel for private(device) num_threads(devicecount)
+    #pragma omp parallel for private(device, streamindex, tileopondevice, Arow, Acol, Brow, Bcol, Crow, Ccol) num_threads(devicecount)
     for (device = 0; device < devicecount; device++){
         GPUCHECK(cudaSetDevice(device));
 
         // Count what tile operation we are currently dealing with
         for (tileopondevice = 0; tileopondevice < numtileopsperdevice; tileopondevice++){
-            Arow = tileopondevice;
-            Acol = device%2;
-            Brow = device%2;
-            Bcol = tileopondevice;
-            printf("device %d: A (%d, %d) and B (%d, %d)\n", device, Arow, Acol, Brow, Bcol);
-            
-            //TileHostToGPUBuff(Arow*x, (Arow+1)*x, Acol*x, (Acol+1)*x, h_A, d_All[device][0], d_streams[streamindex], membuffs[device]); // Tile A
+            streamindex = (device*streamsperdevice + tileopondevice)%streamcount;
+            // printf("streamindex = %d\n", streamindex);
 
+            Arow = tileopondevice; Acol = device%2; Brow = device%2; Bcol = tileopondevice; Crow = device/2; Ccol = device%2; 
+            // printf("device %d: A (%d, %d) and B (%d, %d) and C (%d, %d)\n", device, Arow, Acol, Brow, Bcol, Crow, Ccol);
+
+            TileHostToGPUBuff(Arow*x, (Arow+1)*x, Acol*x, (Acol+1)*x, h_A, d_All[device][0], d_streams[streamindex], membuffs[device]); // Tile A
+            TileHostToGPUBuff(Brow*x, (Brow+1)*x, Bcol*x, (Bcol+1)*x, h_B, d_All[device][1], d_streams[streamindex], membuffs[device]); // Tile B
+
+            GPUCHECK(cudaStreamSynchronize(d_streams[streamindex]));
+
+            // damn man dads not sooo fast.. yet
+            kuhdamm(d_All[device][0], d_All[device][1], d_All[device][2], d_streams[streamindex], handles[device]);
+
+            GPUCHECK(cudaStreamSynchronize(d_streams[streamindex]));
+
+            // Get the tile back
+            TileGPUAddToHostBuff(Crow*x, (Crow+1)*x, Ccol*x, (Ccol+1)*x, d_All[device][2], h_C, d_streams[streamindex], membuffs[device]);
         }
     }
-
-    // Loop over rows of A:
-    //#pragma omp parallel for private(mtile)
-    /*
-    for (mtile = 10; mtile < m/x; ++mtile){
-        // Loop over columns of B:
-        for (ntile = 10; ntile < n/x; ++ntile){
-            // #pragma omp parallel for private(ktile) num_threads(NUMTHREADS)
-            // Loop over columns of A and rows of B:
-            for (ktile = 10; ktile < k/x; ++ktile){
-                // Set device by using integer division: 0, 0, 0, 1, 1, 1, ...
-                //currentdevice = streamindex/streamsperdevice;
-                GPUCHECK(cudaSetDevice(currentdevice));
-
-                TileHostToGPUBuff(mtile*x, (mtile+1)*x, ktile*x, (ktile+1)*x, h_A, d_All[currentdevice][0], d_streams[streamindex], membuffs[currentdevice]); // Tile A
-                TileHostToGPUBuff(ktile*x, (ktile+1)*x, ntile*x, (ntile+1)*x, h_B, d_All[currentdevice][1], d_streams[streamindex], membuffs[currentdevice]); // Tile B
-
-                // We are using two different streams to try out
-                GPUCHECK(cudaStreamSynchronize(d_streams[streamindex]));
-
-                // damn man dads not sooo fast.. yet
-                kuhdamm(d_All[currentdevice][0], d_All[currentdevice][1], d_All[currentdevice][2], d_streams[streamindex], handles[currentdevice]);
-
-                // Get the tile back
-                TileGPUAddToHostBuff(mtile*x, (mtile+1)*x, ntile*x, (ntile+1)*x, d_All[currentdevice][2], h_C, d_streams[streamindex], membuffs[currentdevice]);
-
-                currentdevice++;
-                if (currentdevice != 0 && currentdevice%devicecount == 0) loopindex++;
-                currentdevice = currentdevice%devicecount;
-                streamindex = currentdevice + loopindex*devicecount;
-                streamindex = streamindex%streamcount;
-            }
-        }
-    }
-    */
 
     // Final synchronization:
     #pragma omp parallel for private(device, abc, stream) num_threads(devicecount)
@@ -176,7 +149,8 @@ int main(int argc, char* argv[]) {
     printf("GFLOPS = %.0lf\n", timingResult);
 
     // Test the result for mistakes
-	// kuhdaTestM(0, n, 0, n, h_C);
+    // kuhdaPrintM(h_C);
+	kuhdaTestM(0, n, 0, n, h_C);
 
     // Free all dependencies
     printf("Cleaning up ..\n");
