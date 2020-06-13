@@ -141,7 +141,6 @@ int main(int argc, char* argv[]) {
 
             // Get the tile back
             TileGPUAddToHostBuff(Crow*x, (Crow+1)*x, Ccol*x, (Ccol+1)*x, d_All[device][2], h_C, d_streams[streamindex], membuffs[device]);
-            GPUCHECK(cudaStreamSynchronize(d_streams[streamindex]));
         }
         cudaDeviceSynchronize();
     }
@@ -164,7 +163,7 @@ int main(int argc, char* argv[]) {
             }
         }
     }
-    if (totalerror < 10e-6) printf("Succes");
+    if (totalerror < 10e-6) printf("Succes. ");
     printf("Total error of %6.2e..\n", totalerror);
 
     // Free all dependencies
