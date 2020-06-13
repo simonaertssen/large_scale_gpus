@@ -613,8 +613,8 @@ unsigned int kuhdaAdjustTileSizeForAvailableMemory(int devicecount, unsigned int
             //printf("Q was %d, now Q is %d\n", n/x, Q);
 			// tilesize = (unsigned int) matrixsize/Q;
 			tilesize /= 2;
-			queryMemory = 3*tilesize*tilesize*sizeof(double);
 			printf("%4.2lf GB available on device %d, asking for %4.2lf GB.", (double)availableMemory/GBconv, device, (double) queryMemory/GBconv);
+			queryMemory = 3*tilesize*tilesize*sizeof(double);
             printf(" Changed x to %d. Now asking for %4.2lf GB..\n", tilesize, (double) queryMemory/GBconv);
         } 
 	}
