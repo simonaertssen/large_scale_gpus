@@ -102,7 +102,6 @@ int main(int argc, char* argv[]) {
     // Creat all dependencies:
     for (device = 0; device < devicecount; device++){
         GPUCHECK(cudaSetDevice(device));
-
         membuffs[device] = kuhdaMallocMP(x, x);
 
         for (abc = 0; abc < ABC; ++abc){

@@ -44,3 +44,8 @@ full buffer: AllDeviceMultiplicationPeer:
 results = 3668, 3670, 3590
 Adjusted for memcpy2D:
 results = 3613, 3672, 3640
+
+
+full buffer: ADM_Naive:
+GFLOPS for n = 16384 and x = 8192
+results = 3231, 3512, 3806 (for AllDeviceMultiplication3 at 2644, 2404 and 2458 GFLOPS)
