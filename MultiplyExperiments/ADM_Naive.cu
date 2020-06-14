@@ -175,7 +175,7 @@ int main(int argc, char* argv[]) {
     kuhdaFreeM(h_C, 'k');
 
     timer.Release();
-
+ 
     #pragma omp parallel for private(device, abc, stream) num_threads(devicecount)
     for (device = 0; device < devicecount; device++){
         GPUCHECK(cudaSetDevice(device));
