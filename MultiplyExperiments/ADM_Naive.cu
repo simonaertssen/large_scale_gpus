@@ -14,7 +14,7 @@ parallel for loop to run all devices in parallel in such way that each device ca
 Here, we discard those challenges and go for a true 'naive' approach of classic matrix multiplication: no overlap on C
 
 run with
-nvcc -O3 -Xcompiler -fopenmp -lcublas ../DIEKUHDA/kuhda.cu ADM_NaiveBuff.cu && ./a.out 1000 500
+nvcc -O3 -Xcompiler -fopenmp -lcublas ../DIEKUHDA/kuhda.cu ADM_Naive.cu && ./a.out 1000 
 */
 
 void TileHostToGPUBuff(	unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, 

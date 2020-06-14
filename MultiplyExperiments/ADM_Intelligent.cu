@@ -13,7 +13,7 @@ The challenge here is that different tiles of C are overwritten in TileGPUAddToH
 parallel for loop to run all devices in parallel in such way that each device can recycle tiles of B, we need to synchronize on the tiles of C.
 
 run with
-nvcc -O3 -Xcompiler -fopenmp -lcublas ../DIEKUHDA/kuhda.cu ADM_NaiveBuff.cu && ./a.out 1000 500
+nvcc -O3 -Xcompiler -fopenmp -lcublas ../DIEKUHDA/kuhda.cu ADM_Intelligent.cu && ./a.out 1000
 */
 
 void TileHostToGPUBuff(	unsigned long rowstart, unsigned long rowstop, unsigned long colstart, unsigned long colstop, 
@@ -147,16 +147,16 @@ int main(int argc, char* argv[]) {
             // Get the tile back
             // printf("device %d: streamindex = %d\n", device, streamindex);
             if (device%2 == 0){ 
-                GPUCHECK(cudaEventSynchronize(deviceReady[device+1]));
+                // GPUCHECK(cudaEventSynchronize(deviceReady[device+1]));
                 // GPUCHECK(cudaStreamWaitEvent(d_streams[streamindex + 2], deviceReady[device + 1], 0));
                 // Synchronise on the streams accessing the same tile of C: streams 0 and 2 access the same elements, but they are on devices 0 and 1 respecively.
-                // GPUCHECK(cudaStreamSynchronize(d_streams[(streamindex + 2)%streamcount]));
-                // printf("device %d: streamindex = %d synchronizes on streamindex = %d\n", device, streamindex, (streamindex + 2)%streamcount);
+                GPUCHECK(cudaStreamSynchronize(d_streams[(streamindex + 2)%streamcount]));
+                printf("device %d: streamindex = %d synchronizes on streamindex = %d\n", device, streamindex, (streamindex + 2)%streamcount);
             } else {
-                GPUCHECK(cudaEventSynchronize(deviceReady[device-1]));
+                // GPUCHECK(cudaEventSynchronize(deviceReady[device-1]));
                 // GPUCHECK(cudaStreamWaitEvent(d_streams[streamindex - 2], deviceReady[device - 1], 0));
-                // GPUCHECK(cudaStreamSynchronize(d_streams[(streamindex - 2)%streamcount]));
-                // printf("device %d: streamindex = %d synchronizes on streamindex = %d\n", device, streamindex, (streamindex - 2)%streamcount);
+                GPUCHECK(cudaStreamSynchronize(d_streams[(streamindex - 2)%streamcount]));
+                printf("device %d: streamindex = %d synchronizes on streamindex = %d\n", device, streamindex, (streamindex - 2)%streamcount);
             }
 
             // Record event that one stream has reached this place
