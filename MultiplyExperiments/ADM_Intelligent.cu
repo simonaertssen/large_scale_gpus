@@ -91,6 +91,8 @@ int main(int argc, char* argv[]) {
     
     // Cuda dependencies
     cudaStream_t d_streams[streamcount];
+    cudaEvent_t deviceBusy[devicecount];
+    cudaEvent_t deviceReady[devicecount];
     matrix *membuffs[devicecount];
 
     MatMulTimer timer;
@@ -102,6 +104,9 @@ int main(int argc, char* argv[]) {
     for (device = 0; device < devicecount; device++){
         GPUCHECK(cudaSetDevice(device));
         membuffs[device] = kuhdaMallocMP(x, x);
+
+        GPUCHECK(cudaEventCreate(&deviceReady[device]));
+        GPUCHECK(cudaEventCreate(&deviceBusy[device]));
 
         for (abc = 0; abc < ABC; ++abc){
             d_All[device][abc] = kuhdaMallocDeviceM(x, x);
@@ -126,6 +131,7 @@ int main(int argc, char* argv[]) {
 
         // Count what tile operation we are currently dealing with
         for (tileopondevice = 0; tileopondevice < numtileopsperdevice; tileopondevice++){
+            GPUCHECK(cudaEventSynchronize(deviceReady[device]));
             streamindex = (device*streamsperdevice + tileopondevice)%streamcount;
 
             Arow = tileopondevice; Acol = device%2; Brow = device%2; Bcol = device/2; Crow = tileopondevice; Ccol = device/2; 
@@ -141,15 +147,22 @@ int main(int argc, char* argv[]) {
             // Get the tile back
             // printf("device %d: streamindex = %d\n", device, streamindex);
             if (device%2 == 0){
+                // GPUCHECK(cudaEventSynchronize(deviceReady[device+1]));
+                // GPUCHECK(cudaStreamWaitEvent(d_streams[streamindex + 2], deviceReady[device + 1], 0));
                 // Synchronise on the streams accessing the same tile of C: streams 0 and 2 access the same elements, but they are on devices 0 and 1 respecively.
                 GPUCHECK(cudaStreamSynchronize(d_streams[(streamindex + 2)%streamcount]));
-                // printf("device %d: streamindex = %d synchronizes on streamindex = %d\n", device, streamindex, (streamindex + 2)%streamcount);
+                printf("device %d: streamindex = %d synchronizes on streamindex = %d\n", device, streamindex, (streamindex + 2)%streamcount);
             } else {
+                // GPUCHECK(cudaEventSynchronize(deviceReady[device-1]));
+                // GPUCHECK(cudaStreamWaitEvent(d_streams[streamindex - 2], deviceReady[device - 1], 0));
                 GPUCHECK(cudaStreamSynchronize(d_streams[(streamindex - 2)%streamcount]));
-                // printf("device %d: streamindex = %d synchronizes on streamindex = %d\n", device, streamindex, (streamindex - 2)%streamcount);
+                printf("device %d: streamindex = %d synchronizes on streamindex = %d\n", device, streamindex, (streamindex - 2)%streamcount);
             }
 
+            // Record event that one stream has reached this place
+            GPUCHECK(cudaEventRecord(deviceBusy[device], d_streams[streamindex]));
             TileGPUAddToHostBuff(Crow*x, (Crow+1)*x, Ccol*x, (Ccol+1)*x, d_All[device][2], h_C, d_streams[streamindex], membuffs[device]);
+            GPUCHECK(cudaEventRecord(deviceReady[device], d_streams[streamindex]));
         }
         cudaDeviceSynchronize();
     }
@@ -167,7 +180,7 @@ int main(int argc, char* argv[]) {
             abserror = fabs(h_B->data[i*h_B->c + j] - h_C->data[i*h_C->c + j]);
             totalerror += abserror;
             if (abserror > 10e-6) {
-                printf("Failure: B[%d] = %1.4e != C[%d] = %1.4e\n", i*h_B->c + j, h_B->data[i*h_B->c + j], i*h_C->c + j, h_C->data[i*h_C->c + j]);
+                // printf("Failure: B[%d] = %1.4e != C[%d] = %1.4e\n", i*h_B->c + j, h_B->data[i*h_B->c + j], i*h_C->c + j, h_C->data[i*h_C->c + j]);
                 break;
             }
         }
@@ -189,6 +202,9 @@ int main(int argc, char* argv[]) {
     for (device = 0; device < devicecount; device++){
         GPUCHECK(cudaSetDevice(device));
         CUBLASCHECK(cublasDestroy(handles[device]));
+
+        GPUCHECK(cudaEventDestroy(deviceReady[device]));
+        GPUCHECK(cudaEventDestroy(deviceBusy[device]));
 
         kuhdaFreeM(membuffs[device], 'p');
 
@@ -250,7 +266,7 @@ void TileGPUAddToHostBuff( unsigned long rowstart, unsigned long rowstop, unsign
     #pragma omp parallel for private(i,j) num_threads(NUMTHREADSBUFF)
     for (i = rowstart; i < rowstop; ++i){
         for (j = colstart; j < colstop; ++j){
-            #pragma omp atomic
+            // #pragma omp atomic
             h_matrix->data[i * h_matrix->c + j] += memacc->data[(i - rowstart) * memacc->c + (j - colstart)];
         }
     }
