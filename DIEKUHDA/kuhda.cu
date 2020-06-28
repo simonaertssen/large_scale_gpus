@@ -601,26 +601,26 @@ size_t kuhdaAvailableMemoryOnCurrentDevice(){
 }
 
 // Check available memory to reduce tile size when too large
-unsigned int kuhdaAdjustTileSizeForAvailableMemory(int devicecount, unsigned int matrixsize, unsigned int tilesize){
+void kuhdaAdjustTileSizeForAvailableMemory(const int devicecount, const unsigned int matrixsize, unsigned int &tilesize){
 	int device;
-	size_t availableMemory, queryMemory = (size_t) 3*tilesize*tilesize*sizeof(double), GBconv = 1024*1024*1024;
+	size_t availableMemory, queryMemory = (size_t) 3*tilesize*tilesize*sizeof(double), GBconv = 1.0e9;
  
     for (device = 0; device < devicecount; device++){
         // Get device properties to measure available memory:
         GPUCHECK(cudaSetDevice(device));
-        availableMemory = kuhdaAvailableMemoryOnCurrentDevice();
-        while (availableMemory < queryMemory){
+		availableMemory = kuhdaAvailableMemoryOnCurrentDevice();
+		printf("Device %d, available memory %4.2lf GB\n", device, (double)availableMemory/GBconv);
+        if (availableMemory < queryMemory){
             // get surplus query memory and register how many more x's we will need, + 1 is neccessary for the integer division              
             // Q = (int) matrixsize/tilesize + (int)((double)(queryMemory - availableMemory)/queryMemory) + 1; 
             //printf("Q was %d, now Q is %d\n", n/x, Q);
 			// tilesize = (unsigned int) matrixsize/Q;
-			tilesize /= 2;
+			tilesize = availableMemory;
 			printf("%4.2lf GB available on device %d, asking for %4.2lf GB.", (double)availableMemory/GBconv, device, (double) queryMemory/GBconv);
 			queryMemory = 3*tilesize*tilesize*sizeof(double);
             printf(" Changed x to %d. Now asking for %4.2lf GB..\n", tilesize, (double) queryMemory/GBconv);
-        } 
+		} 
 	}
-	return tilesize;
 }
 
 
@@ -755,7 +755,7 @@ int kuhdammson(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, cudaStream_
 
 	// Data for the computations:
 	unsigned int m = d_A_tile->r, k = d_A_tile->c, n = d_C_tile->c;
-	double alpha = 1.0, beta  = 0.0;
+	double alpha = 1.0, beta  = 1.0;
 	
 	CUBLASCHECK(cublasSetStream(handle, stream));
 	CUBLASCHECK(cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, &alpha,

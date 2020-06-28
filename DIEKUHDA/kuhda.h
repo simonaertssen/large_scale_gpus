@@ -147,7 +147,7 @@ void TileGPUAddToHost(unsigned long rowstart, unsigned long rowstop, unsigned lo
 void kuhdaWarmup(int devicecount);
 void kuhdaWarmupDevice(int device); // for omp parallel calls
 size_t kuhdaAvailableMemoryOnCurrentDevice();
-unsigned int kuhdaAdjustTileSizeForAvailableMemory(int devicecount, unsigned int matrixsize, unsigned int tilesize);
+void kuhdaAdjustTileSizeForAvailableMemory(int devicecount, const unsigned int matrixsize, unsigned int &tilesize);
 cudaError_t gpuAssert(cudaError_t code, const char *file, int line);
 cublasStatus_t cublasAssert(cublasStatus_t error, const char *file, int line);
 
@@ -186,9 +186,9 @@ struct MatMulTimer
 		cudaEventSynchronize(stop);
 		cudaEventElapsedTime(&elapsedtime, start, stop);
 	  	long unsigned int numerator = (long unsigned int)(m * n) * (long unsigned int)(2 * k + 2); 		// [GFLOP]
-    	double denominator = (double) 1.0e6 * elapsedtime;												// [1/s]
+    	long double denominator = (long double) elapsedtime;												// [1/s]
     	// printf("elapsed time = %lf\n", elapsedtime);
-		return (double) numerator / denominator;
+		return (double) numerator / denominator / 1.0e6;
   	}
 
   double GFLOPS_MM(int m, int n, int k) {
