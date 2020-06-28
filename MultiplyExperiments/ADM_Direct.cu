@@ -74,13 +74,13 @@ int main(int argc, char* argv[]) {
 
 	// Containers for host and device matrices
 	matrix *h_A = kuhdaMallocMdiag(n, n); // matrix A as a diagonal matrix
-    matrix *h_B = kuhdaMallocMdiag(n, n);     // matrix B to be filled with specific values for specific testing
+    matrix *h_B = kuhdaMallocM(n, n);     // matrix B to be filled with specific values for specific testing
     matrix *h_C = kuhdaMallocM(n, n);     // matrix C will contain results: same values at each spot as in b
     unsigned long i, j;
     #pragma omp parallel for private(i,j) num_threads(NUMTHREADSBUFF)
 	for (i = 0; i < h_B->r; ++i){
 		for (j = 0; j < h_B->c; ++j){
-            //h_B->data[i*h_B->c + j] = (i + j) * 0.1 + i;
+            h_B->data[i*h_B->c + j] = (i + j) * 0.1 + i;
         }
     }
     
@@ -140,7 +140,7 @@ int main(int argc, char* argv[]) {
 
 
     // Parallel device multiplication loop
-    // #pragma omp parallel for private(device, stream) num_threads(devicecount)
+    #pragma omp parallel for private(device, stream, streamop, tileop, Arow, Acol, Brow, Bcol, Crow, Ccol) num_threads(devicecount)
     for (device = 0; device < devicecount; device++){
         GPUCHECK(cudaSetDevice(device));
 
@@ -151,41 +151,46 @@ int main(int argc, char* argv[]) {
                 tileindex = (device*MAXSTREAMSPERD + stream)*numtilesperstream + streamop; 
                 
                 Crow = tileindex/numtilesperdim; Ccol = tileindex%numtilesperdim;
-                printf("Dev %d: tileindex = %d, (%d,%d)\n", device, tileindex, Crow, Ccol);
+                // printf("Dev %d: tileindex = %d, (%d,%d)\n", device, tileindex, Crow, Ccol);
 
-                printf("A = ");
+                // printf("A = ");
 
                 // Loop over all tiles of A and B to copy: Arow = Crow and Bcol = Ccol
                 for (tileop = 0; tileop < numtilesperdim; ++tileop){
                     Arow = Crow;   Acol = tileop;
                     Brow = tileop; Bcol = Ccol;
 
-                    printf("(%d, %d) ", Arow, Acol);
+                    // printf("(%d, %d) ", Arow, Acol);
 
                     TileHostToGPUBuff(Arow*x, (Arow+1)*x, Acol*x, (Acol+1)*x, h_A, d_All[device][A][stream], d_streams[device][stream], membuffs[device][stream]); // Tile A
                     TileHostToGPUBuff(Brow*x, (Brow+1)*x, Bcol*x, (Bcol+1)*x, h_B, d_All[device][B][stream], d_streams[device][stream], membuffs[device][stream]); // Tile B
                     // kuhdaPrintDeviceM(d_All[device][A][stream]);
 
-                    // kuhdammson(d_All[device][A][stream], d_All[device][B][stream], d_All[device][C][stream], d_streams[device][stream], handles[device]);
+                    kuhdammson(d_All[device][A][stream], d_All[device][B][stream], d_All[device][C][stream], d_streams[device][stream], handles[device]);
+                    GPUCHECK(cudaStreamSynchronize(d_streams[device][stream]));
+
+                    TileGPUToHostBuff(Crow*x, (Crow+1)*x, Ccol*x, (Ccol+1)*x, d_All[device][C][stream], h_C, d_streams[device][stream], membuffs[device][stream]);
+                    GPUCHECK(cudaStreamSynchronize(d_streams[device][stream]));
+
+                    // TileGPUToHostBuff(Brow*x, (Brow+1)*x, Bcol*x, (Bcol+1)*x, d_All[device][B][stream], h_C, d_streams[device][stream], membuffs[device][stream]);
                     // GPUCHECK(cudaStreamSynchronize(d_streams[device][stream]));
-
-                    GPUCHECK(cudaStreamSynchronize(d_streams[device][stream]));
-                    TileGPUToHostBuff(Brow*x, (Brow+1)*x, Bcol*x, (Bcol+1)*x, d_All[device][B][stream], h_C, d_streams[device][stream], membuffs[device][stream]);
-                    GPUCHECK(cudaStreamSynchronize(d_streams[device][stream]));
                 }
-                printf("\n");
+                // TileGPUToHostBuff(Crow*x, (Crow+1)*x, Ccol*x, (Ccol+1)*x, d_All[device][C][stream], h_C, d_streams[device][stream], membuffs[device][stream]);
+                // GPUCHECK(cudaStreamSynchronize(d_streams[device][stream]));
 
-                printf("B = ");
-                for (tileop = 0; tileop < numtilesperdim; ++tileop){
-                    Brow = tileop; Bcol = Ccol;
-                    printf("(%d, %d) ", Brow, Bcol);
-                }
-                printf("\n");
+                // printf("\n");
+
+                // printf("B = ");
+                // for (tileop = 0; tileop < numtilesperdim; ++tileop){
+                //     Brow = tileop; Bcol = Ccol;
+                //     printf("(%d, %d) ", Brow, Bcol);
+                // }
+                // printf("\n");
             }
         }
         cudaDeviceSynchronize();
     }
-    kuhdaPrintM(h_C);
+    // kuhdaPrintM(h_C);
 
     
     timer.Stop();
@@ -279,7 +284,8 @@ void TileGPUToHostBuff( unsigned long rowstart, unsigned long rowstop, unsigned 
     #pragma omp parallel for private(i,j) num_threads(NUMTHREADSBUFF)
     for (i = rowstart; i < rowstop; ++i){
         for (j = colstart; j < colstop; ++j){
-            h_matrix->data[i * h_matrix->c + j] = memacc->data[(i - rowstart) * memacc->c + (j - colstart)];
+            // #pragma omp atomic
+            h_matrix->data[i * h_matrix->c + j] += memacc->data[(i - rowstart) * memacc->c + (j - colstart)];
         }
     }
 }
