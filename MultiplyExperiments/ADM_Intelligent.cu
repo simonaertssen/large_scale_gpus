@@ -146,18 +146,19 @@ int main(int argc, char* argv[]) {
 
             // Get the tile back
             // printf("device %d: streamindex = %d\n", device, streamindex);
-            if (device%2 == 0){ 
+            if (streamindex == 0 or streamindex == 4 or streamindex == 1 or streamindex == 5){ 
                 // GPUCHECK(cudaEventSynchronize(deviceReady[device+1]));
-                // GPUCHECK(cudaStreamWaitEvent(d_streams[streamindex + 2], deviceReady[device + 1], 0));
+                GPUCHECK(cudaStreamWaitEvent(d_streams[streamindex], deviceReady[device+1], 0));
                 // Synchronise on the streams accessing the same tile of C: streams 0 and 2 access the same elements, but they are on devices 0 and 1 respecively.
-                GPUCHECK(cudaStreamSynchronize(d_streams[(streamindex + 2)%streamcount]));
+                // GPUCHECK(cudaStreamSynchronize(d_streams[(streamindex + 2)%streamcount]));
                 printf("device %d: streamindex = %d synchronizes on streamindex = %d\n", device, streamindex, (streamindex + 2)%streamcount);
-            } else {
-                // GPUCHECK(cudaEventSynchronize(deviceReady[device-1]));
-                // GPUCHECK(cudaStreamWaitEvent(d_streams[streamindex - 2], deviceReady[device - 1], 0));
-                GPUCHECK(cudaStreamSynchronize(d_streams[(streamindex - 2)%streamcount]));
-                printf("device %d: streamindex = %d synchronizes on streamindex = %d\n", device, streamindex, (streamindex - 2)%streamcount);
             }
+            // } else if (streamindex == 1 or streamindex == 5) {
+            //     // GPUCHECK(cudaEventSynchronize(deviceReady[device-1]));
+            //     // GPUCHECK(cudaStreamWaitEvent(d_streams[streamindex - 2], deviceReady[device - 1], 0));
+            //     GPUCHECK(cudaStreamSynchronize(d_streams[(streamindex - 2)%streamcount]));
+            //     printf("device %d: streamindex = %d synchronizes on streamindex = %d\n", device, streamindex, (streamindex - 2)%streamcount);
+            // }
 
             // Record event that one stream has reached this place
             GPUCHECK(cudaEventRecord(deviceBusy[device], d_streams[streamindex]));
