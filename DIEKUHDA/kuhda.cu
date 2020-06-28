@@ -755,7 +755,7 @@ int kuhdammson(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, cudaStream_
 
 	// Data for the computations:
 	unsigned int m = d_A_tile->r, k = d_A_tile->c, n = d_C_tile->c;
-	double alpha = 1.0, beta  = 1.0;
+	double alpha = 1.0, beta  = 0.0;
 	
 	CUBLASCHECK(cublasSetStream(handle, stream));
 	CUBLASCHECK(cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, &alpha,

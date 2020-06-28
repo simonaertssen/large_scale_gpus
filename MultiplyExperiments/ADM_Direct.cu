@@ -140,13 +140,15 @@ int main(int argc, char* argv[]) {
 
 
     // Parallel device multiplication loop
-    #pragma omp parallel for private(device, stream, streamop, tileop, Arow, Acol, Brow, Bcol, Crow, Ccol) num_threads(devicecount)
+    #pragma omp parallel for num_threads(devicecount)
     for (device = 0; device < devicecount; device++){
         GPUCHECK(cudaSetDevice(device));
 
         // Loop over streams per device
+        #pragma omp parallel for num_threads(MAXSTREAMSPERD)
         for (stream = 0; stream < MAXSTREAMSPERD; ++stream){
             // Loop over all operations on C per stream
+            #pragma omp parallel for private(tileindex, Crow, Ccol) num_threads(numtilesperstream)
             for (streamop = 0; streamop < numtilesperstream; ++streamop){
                 tileindex = (device*MAXSTREAMSPERD + stream)*numtilesperstream + streamop; 
                 
@@ -156,6 +158,7 @@ int main(int argc, char* argv[]) {
                 // printf("A = ");
 
                 // Loop over all tiles of A and B to copy: Arow = Crow and Bcol = Ccol
+                #pragma omp parallel for private(tileop, Arow, Acol, Brow, Bcol) num_threads(numtilesperdim)
                 for (tileop = 0; tileop < numtilesperdim; ++tileop){
                     Arow = Crow;   Acol = tileop;
                     Brow = tileop; Bcol = Ccol;
@@ -167,10 +170,10 @@ int main(int argc, char* argv[]) {
                     // kuhdaPrintDeviceM(d_All[device][A][stream]);
 
                     kuhdammson(d_All[device][A][stream], d_All[device][B][stream], d_All[device][C][stream], d_streams[device][stream], handles[device]);
-                    GPUCHECK(cudaStreamSynchronize(d_streams[device][stream]));
+                    // GPUCHECK(cudaStreamSynchronize(d_streams[device][stream]));
 
                     TileGPUToHostBuff(Crow*x, (Crow+1)*x, Ccol*x, (Ccol+1)*x, d_All[device][C][stream], h_C, d_streams[device][stream], membuffs[device][stream]);
-                    GPUCHECK(cudaStreamSynchronize(d_streams[device][stream]));
+                    // GPUCHECK(cudaStreamSynchronize(d_streams[device][stream]));
 
                     // TileGPUToHostBuff(Brow*x, (Brow+1)*x, Bcol*x, (Bcol+1)*x, d_All[device][B][stream], h_C, d_streams[device][stream], membuffs[device][stream]);
                     // GPUCHECK(cudaStreamSynchronize(d_streams[device][stream]));
