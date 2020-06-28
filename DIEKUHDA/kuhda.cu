@@ -733,6 +733,37 @@ int kuhdamm(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, cudaStream_t s
 }
 
 
+/* kuhdammson(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, int verbose):
+perform matrix-matrix multiplication of tiles on a device, performed by cublasDgemm, with C as a accumulator.
+C <- alpha * AB + beta*C	 with	 [A] = m x k, [B] = k x n, [C] = m x n
+
+Arguments: m, n, k = formal dimensions of the matrices A, B and C,
+
+Return value: the number of GigaFlops (GFLOPS), or NULL if an error occured */
+int kuhdammson(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, cudaStream_t stream, cublasHandle_t handle){
+	if (d_A_tile == NULL || d_B_tile == NULL || d_C_tile == NULL){
+		INPUT_NULL_ERR;
+		return -1;
+	}
+	if (d_A_tile->r != d_C_tile->r || d_A_tile->c != d_B_tile->r || d_B_tile->c != d_C_tile->c){
+		INPUT_ILL_ERR_D(d_A_tile->r);
+		return DIEKUHDA_DIMENSION_MISMATCH;
+	}
+	if (stream == NULL) INPUT_NULL_ERR;
+
+	// Data for the computations:
+	unsigned int m = d_A_tile->r, k = d_A_tile->c, n = d_C_tile->c;
+	double alpha = 1.0, beta  = 0.0;
+	
+
+	CUBLASCHECK(cublasSetStream(handle, stream));
+	
+	CUBLASCHECK(cublasDgemm(handle, CUBLAS_OP_N, CUBLAS_OP_N, m, n, k, &alpha,
+			d_A_tile->data, m, d_B_tile->data, k, &beta, d_C_tile->data, m));
+	
+	return 0;
+}
+
 
 
 //////////////////////////////////////////////////////////////////
