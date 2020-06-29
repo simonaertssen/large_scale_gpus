@@ -70,7 +70,7 @@ int main(int argc, char* argv[]) {
     }    
 
     // Check dimensions with regards to the available memory:
-    // kuhdaAdjustTileSizeForAvailableMemory(devicecount, n, x);
+    kuhdaAdjustTileSizeForAvailableMemory(devicecount, n, x);
 
     printf("Matrix dimension = %lu, block size = %lu.. \n", n, x);
     int tileop, numtilestotal = numtilesperdim*numtilesperdim, numtilesperdev = numtilestotal/devicecount, streamop, numtilesperstream = numtilesperdev/MAXSTREAMSPERD;
@@ -139,9 +139,8 @@ int main(int argc, char* argv[]) {
             // #pragma omp parallel for private(tileindex, tileop, Arow, Acol, Brow, Bcol, Crow, Ccol) num_threads(numtilesperstream)
             for (streamop = 0; streamop < numtilesperstream; ++streamop){
                 // Register indices of C tiles
-                tileindex = (device*numstreamsperdevice + stream)*numtilesperstream + streamop; 
-                // #pragma omp atomic
-                // tileindex++; 
+                // tileindex = (device*numstreamsperdevice + stream)*numtilesperstream + streamop; 
+                tileindex = (stream*devicecount + device)*numtilesperstream + streamop; 
                 Crow = tileindex/numtilesperdim; Ccol = tileindex%numtilesperdim;
 
                 // Set contents of C to zero for use as an accumulator:
@@ -230,7 +229,7 @@ void TileHostToGPUBuff(	unsigned long rowstart, unsigned long rowstop, unsigned 
     if (h_matrix->r <= 0 || h_matrix->c <= 0 || d_tile->r <= 0 || d_tile->c <= 0) INPUT_ILL_ERR_LU(h_matrix->r);
     if (stream == NULL) INPUT_NULL_ERR;
 
-    // unsigned long cols = colstop - colstart, rows = rowstop - rowstart, i, j;
+    unsigned long i, j; //cols = colstop - colstart, rows = rowstop - rowstart, i, j;
 
     #pragma omp parallel for private(i,j) num_threads(NUMTHREADSBUFF) collapse(2)
     for (i=rowstart; i<rowstop; ++i){
@@ -252,7 +251,7 @@ void TileGPUToHostBuff( unsigned long rowstart, unsigned long rowstop, unsigned 
     if (h_matrix->r <= 0 || h_matrix->c <= 0 || d_tile->r <= 0 || d_tile->c <= 0) INPUT_ILL_ERR_LU(h_matrix->r);
     if (stream == NULL) INPUT_NULL_ERR;
 
-    // unsigned long cols = colstop - colstart, rows = rowstop - rowstart, i, j;
+    unsigned long i, j; //cols = colstop - colstart, rows = rowstop - rowstart, i, j;
     // GPUCHECK(cudaMemcpyAsync((void*)&memacc->data[0], (void*)&d_tile->data[0], rows*cols*sizeof(double), cudaMemcpyDeviceToHost, stream));
     GPUCHECK(cudaMemcpy2DAsync((void*)&memacc->data[0], memacc->c*sizeof(double), (const void*)&d_tile->data[0], d_tile->c*sizeof(double), d_tile->c*sizeof(double), d_tile->r, cudaMemcpyDeviceToHost, stream));
     GPUCHECK(cudaStreamSynchronize(stream));
