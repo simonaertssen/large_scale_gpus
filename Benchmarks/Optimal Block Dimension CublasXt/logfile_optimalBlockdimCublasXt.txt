@@ -28,3 +28,8 @@ Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(100) STOP SUCCES
 n = 8192, blockdim = 2048
 GFLOPS = 1102..
 Checking results. Succes.
+Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(34) START SUCCES
+Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(100) STOP SUCCES
+n = 32768, blockdim = 1024
+GFLOPS = 1741..
+Checking results. Succes.

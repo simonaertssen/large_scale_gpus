@@ -1,2 +1,3 @@
 n, blockdim, GFLOPS
 
+32768, 1024, 1740.5

@@ -12,20 +12,20 @@
 
 int main(int argc, char *argv[]) {
 	// Regulate input:
-	unsigned int n, blockdim;
+	unsigned long n = 16384, blockdim = 1024;
 
 	// for (n = 1024; n <= 32768; n+=1024) printf("%zu ", n);
 	// return 0;
 
 	// Set matrix size
     if (argc > 1){
-		n = (unsigned int)atoi(argv[1]);
+		n = (unsigned long)atoi(argv[1]);
 		blockdim = n/2;
     }
 
     // Set tile size
     if (argc > 2){
-        blockdim = (unsigned int)atoi(argv[2]);
+        blockdim = (unsigned long)atoi(argv[2]);
 	}
 
 	// Find GPU info and adjust tile size
@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
 	if (blockdim*2 > n) blockdim = n/2;
 
 	FILE *logfile = fopen("logfile_benchmarkCublasXt.txt", "a");
-	// freopen("logfile_benchmarkCublasXt.txt","a",stdout);
+	freopen("logfile_benchmarkCublasXt.txt","a",stdout);
 	FILE *output = fopen("results_benchmarkCublasXt.txt", "a");
 	if (logfile == NULL || output == NULL) {
 		fclose(output);
@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
 	printf("n = %zu, blockdim = %zu\n", n, blockdim);
 
 	// Allocate matrices
-	unsigned int m = n, k = n;
+	unsigned long m = n, k = n;
 	matrix *h_A = kuhdaMallocMdiag(n, n); // matrix A as a diagonal matrix
     matrix *h_B = kuhdaMallocMdiag(n, n); // matrix B to be filled with specific values for specific testing
     matrix *h_C = kuhdaMallocM(n, n);     // matrix C will contain results: same values at each spot as in b
