@@ -601,7 +601,36 @@ size_t kuhdaAvailableMemoryOnCurrentDevice(){
 }
 
 // Check available memory to reduce tile size when too large
-void kuhdaAdjustTileSizeForAvailableMemory(const int devicecount, const unsigned int matrixsize, unsigned int &tilesize){
+void kuhdaAdjustTileSizeForAvailableMemory(const int devicecount, const unsigned long matrixsize, unsigned long &tilesize){
+	int device;
+	size_t Q = 1, availableMemory, queryMemory = (size_t) 3*tilesize*tilesize*sizeof(double), GBconv = pow(1024,3);
+ 
+    for (device = 0; device < devicecount; device++){
+        // Get device properties to measure available memory:
+        GPUCHECK(cudaSetDevice(device));
+		availableMemory = kuhdaAvailableMemoryOnCurrentDevice();
+		printf("Device %d, asking for %4.2lf GB but available memory %4.2lf GB\n", device, (double)queryMemory/GBconv, (double)availableMemory/GBconv);
+        if (availableMemory < queryMemory){
+            // get surplus query memory and register how many more x's we will need, + 1 is neccessary for the integer division              
+            // Q = (int) matrixsize/tilesize + (int)((double)(queryMemory - availableMemory)/queryMemory) + 1; 
+            //printf("Q was %d, now Q is %d\n", n/x, Q);
+			// tilesize = (unsigned long) matrixsize/Q;
+			tilesize = sqrt(availableMemory/3/sizeof(double));
+			// tilesize = tilesize - (matrixsize % tilesize);
+			while (matrixsize % tilesize != 0) {
+				Q = (int)matrixsize/tilesize + 1;
+				tilesize = matrixsize/Q;
+			}
+			// printf("%4.2lf GB available on device %d, asking for %4.2lf GB.", (double)availableMemory/GBconv, device, (double) queryMemory/GBconv);
+			queryMemory = 3*tilesize*tilesize*sizeof(double);
+            printf("Changed x to %d. Now asking for %4.2lf GB..\n", tilesize, (double) queryMemory/GBconv);
+		} 
+	}
+}
+
+
+// Get largest available tile size
+void kuhdaGetLargestTileDim(const int devicecount, const unsigned long matrixsize, unsigned long &tilesize){
 	int device;
 	size_t availableMemory, queryMemory = (size_t) 3*tilesize*tilesize*sizeof(double), GBconv = pow(1024,3);
  
@@ -609,16 +638,16 @@ void kuhdaAdjustTileSizeForAvailableMemory(const int devicecount, const unsigned
         // Get device properties to measure available memory:
         GPUCHECK(cudaSetDevice(device));
 		availableMemory = kuhdaAvailableMemoryOnCurrentDevice();
-		printf("Device %d, available memory %4.2lf GB\n", device, (double)availableMemory/GBconv);
+		printf("Device %d, asking for %4.2lf GB but available memory %4.2lf GB\n", device, (double)queryMemory/GBconv, (double)availableMemory/GBconv);
         if (availableMemory < queryMemory){
             // get surplus query memory and register how many more x's we will need, + 1 is neccessary for the integer division              
             // Q = (int) matrixsize/tilesize + (int)((double)(queryMemory - availableMemory)/queryMemory) + 1; 
             //printf("Q was %d, now Q is %d\n", n/x, Q);
-			// tilesize = (unsigned int) matrixsize/Q;
-			tilesize = availableMemory;
-			printf("%4.2lf GB available on device %d, asking for %4.2lf GB.", (double)availableMemory/GBconv, device, (double) queryMemory/GBconv);
+			// tilesize = (unsigned long) matrixsize/Q;
+			tilesize = sqrt(availableMemory/3/sizeof(double));
+			// printf("%4.2lf GB available on device %d, asking for %4.2lf GB.", (double)availableMemory/GBconv, device, (double) queryMemory/GBconv);
 			queryMemory = 3*tilesize*tilesize*sizeof(double);
-            printf(" Changed x to %d. Now asking for %4.2lf GB..\n", tilesize, (double) queryMemory/GBconv);
+            printf("Changed x to %d. Now asking for %4.2lf GB..\n", tilesize, (double) queryMemory/GBconv);
 		} 
 	}
 }
@@ -644,7 +673,7 @@ long long kuhdaTimeDGEMM(matrix *d_matrix, int reps, int verbose){
 		return -1;
 	}
 	// Data for the computations:
-	unsigned int m = d_matrix->r, k = d_matrix->r, n = d_matrix->c;
+	unsigned long m = d_matrix->r, k = d_matrix->r, n = d_matrix->c;
 	double alpha = 1.0, beta  = 0.0;
 	cublasHandle_t handle;
 	int failure = cublasCreate(&handle);
@@ -722,7 +751,7 @@ int kuhdamm(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, cudaStream_t s
 	if (stream == NULL) INPUT_NULL_ERR;
 
 	// Data for the computations:
-	unsigned int m = d_A_tile->r, k = d_A_tile->c, n = d_C_tile->c;
+	unsigned long m = d_A_tile->r, k = d_A_tile->c, n = d_C_tile->c;
 	double alpha = 1.0, beta  = 0.0;
 	
 
@@ -754,7 +783,7 @@ int kuhdammson(matrix *d_A_tile, matrix *d_B_tile, matrix *d_C_tile, cudaStream_
 	if (stream == NULL) INPUT_NULL_ERR;
 
 	// Data for the computations:
-	unsigned int m = d_A_tile->r, k = d_A_tile->c, n = d_C_tile->c;
+	unsigned long m = d_A_tile->r, k = d_A_tile->c, n = d_C_tile->c;
 	double alpha = 1.0, beta  = 1.0;
 	
 	CUBLASCHECK(cublasSetStream(handle, stream));

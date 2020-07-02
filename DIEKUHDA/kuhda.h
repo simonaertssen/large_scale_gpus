@@ -147,7 +147,9 @@ void TileGPUAddToHost(unsigned long rowstart, unsigned long rowstop, unsigned lo
 void kuhdaWarmup(int devicecount);
 void kuhdaWarmupDevice(int device); // for omp parallel calls
 size_t kuhdaAvailableMemoryOnCurrentDevice();
-void kuhdaAdjustTileSizeForAvailableMemory(int devicecount, const unsigned int matrixsize, unsigned int &tilesize);
+void kuhdaAdjustTileSizeForAvailableMemory(int devicecount, const unsigned long matrixsize, unsigned long &tilesize);
+void kuhdaGetLargestTileDim(int devicecount, const unsigned long matrixsize, unsigned long &tilesize);
+
 cudaError_t gpuAssert(cudaError_t code, const char *file, int line);
 cublasStatus_t cublasAssert(cublasStatus_t error, const char *file, int line);
 
@@ -157,7 +159,7 @@ cublasStatus_t cublasAssert(cublasStatus_t error, const char *file, int line);
 struct MatMulTimer
 {
 	MatMulTimer() {
-    cudaStreamCreate(&stream);
+    	cudaStreamCreate(&stream);
 		cudaEventCreate(&start);
 		cudaEventCreate(&stop);
 	}
@@ -179,14 +181,14 @@ struct MatMulTimer
 		cudaEventDestroy(stop);
 	}
 
-	double GFLOPS_DGEMM(unsigned int m, unsigned int n, unsigned int k) {
+	double GFLOPS_DGEMM(unsigned long m, unsigned long n, unsigned long k) {
 		// Calculate the number of operations necessary for a matrix multiplication A * B with [A] = m x k and [B] = k x n
 	  	// See https://forums.developer.nvidia.com/t/how-to-compute-gflops-for-gemm-blas/20218/6
 		float elapsedtime;
 		cudaEventSynchronize(stop);
 		cudaEventElapsedTime(&elapsedtime, start, stop);
-	  	long unsigned int numerator = (long unsigned int)(m * n) * (long unsigned int)(2 * k + 2) / 1.0e3; 		// [GFLOP]
-    	long double denominator = (long double) 1.0e3*elapsedtime;												// [1/s]
+	  	long double numerator = (long double)(m * n) / 1.0e3 * (long double)(2 * k + 2) / 1.0e3; 		// [GFLOP]
+		long double denominator = (long double) elapsedtime;										// [1/s]
     	// printf("elapsed time = %lf\n", elapsedtime);
 		return (double) numerator / denominator;
   	}
@@ -198,7 +200,7 @@ struct MatMulTimer
 	  	long int M = (long int)m, N = (long int)n, K = (long int)k;
 		cudaEventSynchronize(stop);
 		cudaEventElapsedTime(&elapsedtime, start, stop);
-	  	long unsigned int numerator = (M * N) * (K - 2);
+	  	long unsigned long numerator = (M * N) * (K - 2);
     	double denominator = (double) 1.0e6 * elapsedtime;
 		return (double) numerator / denominator;
 	}
