@@ -1,0 +1,19 @@
+Wed Jul  1 12:14:02 2020, benchmarkCublasXt.cu(40) START SUCCES
+Wed Jul  1 12:14:02 2020, benchmarkCublasXt.cu(102) STOP SUCCES
+n = 8192, blockdim = 1024
+GFLOPS = 1531..
+Checking results. Succes.
+n = 8192, blockdim = 4096
+Wed Jul  1 12:14:02 2020, benchmarkCublasXt.cu(40) START SUCCES
+n = 16384, blockdim = 4096
+Wed Jul  1 12:14:02 2020, benchmarkCublasXt.cu(40) START SUCCES
+n = 16384, blockdim = 7020
+Wed Jul  1 12:14:02 2020, benchmarkCublasXt.cu(40) START SUCCES
+Wed Jul  1 12:14:02 2020, benchmarkCublasXt.cu(40) START SUCCES
+Wed Jul  1 12:14:02 2020, benchmarkCublasXt.cu(102) STOP SUCCES
+n = 8192, blockdim = 1024
+GFLOPS = 1457..
+Checking results. Succes.
+Thu Jul  2 09:18:03 2020, benchmarkCublasXt.cu(43) START SUCCES
+Thu Jul  2 09:20:57 2020, benchmarkCublasXt.cu(44) START SUCCES
+Thu Jul  2 09:20:57 2020, benchmarkCublasXt.cu(106) STOP SUCCES
