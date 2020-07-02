@@ -25,7 +25,7 @@ int main(int argc, char *argv[]) {
 	} 
 
 	FILE *logfile = fopen("logfile_optimalBlockdimCublasXt.txt", "a");
-	freopen("logfile_optimalBlockdimCublasXt.txt","a",stdout);
+	// freopen("logfile_optimalBlockdimCublasXt.txt","a",stdout);
 	FILE *output = fopen("results_optimalBlockdimCublasXt.txt", "a");
 	if (logfile == NULL || output == NULL) {
 		fclose(output);

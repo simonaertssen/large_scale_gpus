@@ -33,3 +33,43 @@ Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(100) STOP SUCCES
 n = 32768, blockdim = 1024
 GFLOPS = 1741..
 Checking results. Succes.
+Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(34) START SUCCES
+Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(100) STOP SUCCES
+n = 32768, blockdim = 1024
+GFLOPS = 1717..
+Checking results. Succes.
+Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(34) START SUCCES
+Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(100) STOP SUCCES
+n = 32768, blockdim = 1024
+GFLOPS = 1734..
+Checking results. Succes.
+Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(34) START SUCCES
+Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(100) STOP SUCCES
+n = 32768, blockdim = 1024
+GFLOPS = 1790..
+Checking results. Succes.
+Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(34) START SUCCES
+Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(100) STOP SUCCES
+n = 32768, blockdim = 2048
+GFLOPS = 3118..
+Checking results. Succes.
+Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(34) START SUCCES
+Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(100) STOP SUCCES
+n = 32768, blockdim = 2048
+GFLOPS = 2954..
+Checking results. Succes.
+Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(34) START SUCCES
+Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(100) STOP SUCCES
+n = 32768, blockdim = 2048
+GFLOPS = 3227..
+Checking results. Succes.
+Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(34) START SUCCES
+Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(100) STOP SUCCES
+n = 32768, blockdim = 2048
+GFLOPS = 2961..
+Checking results. Succes.
+Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(34) START SUCCES
+Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(100) STOP SUCCES
+n = 32768, blockdim = 1024
+GFLOPS = 1690..
+Checking results. Succes.
