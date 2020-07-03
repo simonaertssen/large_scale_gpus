@@ -92,3 +92,18 @@ n = 65536, blockdim = 16384
 Fri Jul  3 00:31:00 2020, benchmarkCublasXt.cu(44) START SUCCES
 n = 65536, blockdim = 16384
 Fri Jul  3 00:31:00 2020, benchmarkCublasXt.cu(44) START SUCCES
+Fri Jul  3 13:19:14 2020, benchmarkCublasXt.cu(44) START SUCCES
+Fri Jul  3 13:19:14 2020, benchmarkCublasXt.cu(108) STOP SUCCES
+n = 65536, blockdim = 8192
+GFLOPS = 3243..
+Checking results. Succes.
+Fri Jul  3 13:19:14 2020, benchmarkCublasXt.cu(44) START SUCCES
+Fri Jul  3 13:19:14 2020, benchmarkCublasXt.cu(108) STOP SUCCES
+n = 65536, blockdim = 8192
+GFLOPS = 4258..
+Checking results. Succes.
+Fri Jul  3 13:19:14 2020, benchmarkCublasXt.cu(44) START SUCCES
+Fri Jul  3 13:19:14 2020, benchmarkCublasXt.cu(108) STOP SUCCES
+n = 65536, blockdim = 8192
+GFLOPS = 3170..
+Checking results. Succes.

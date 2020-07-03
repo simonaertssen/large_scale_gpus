@@ -10,7 +10,7 @@
 
 int main(int argc, char *argv[]) {
 	// Regulate input:
-	unsigned long n, blockdim, adjustedblockdim;
+	unsigned long n, blockdim;
 
 	if (argc == 2){
 		blockdim = (unsigned long)atoi(argv[1]);
@@ -23,9 +23,9 @@ int main(int argc, char *argv[]) {
 	// Find GPU info, and only adjust block dimension if there is not enough memory
 	int device_count;
 	gpuErrchk(cudaGetDeviceCount(&device_count));
-	kuhdaAdjustTileSizeForAvailableMemory(device_count, n, adjustedblockdim);
-	if (adjustedblockdim < blockdim) blockdim = adjustedblockdim;
-	if (blockdim > 8192) blockdim = 8192;
+	// kuhdaAdjustTileSizeForAvailableMemory(device_count, n, adjustedblockdim);
+	// if (adjustedblockdim < blockdim) blockdim = adjustedblockdim;
+	// if (blockdim > 8192) blockdim = 8192;
 
 	FILE *logfile = fopen("logfile_optimalBlockdimCublasXt.txt", "a");
 	// freopen("logfile_optimalBlockdimCublasXt.txt","a",stdout);
