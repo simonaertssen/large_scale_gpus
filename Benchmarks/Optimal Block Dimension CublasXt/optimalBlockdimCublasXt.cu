@@ -4,25 +4,28 @@
 #include "cuda.h"
 
 // With this script, we aim to measure the performance of cublasXt on the DTU cluster for different block dimensions.
-// We will be using tiles of 4 GiB, which on one device should take 12 GiB. 
-
 // Run with nvcc -o optimalBlockdimCublasXt -O3 -lcublas ../DIEKUHDA/kuhda.cu optimalBlockdimCublasXt.cu && ./optimalBlockdimCublasXt
 
-#define TILEMEMINGB 1
 #define LOG(X,Y) fprintf(logfile, "%s, %s(%d) " #X " " #Y "\n", __TIMESTAMP__, __FILE__, __LINE__);
 
 int main(int argc, char *argv[]) {
 	// Regulate input:
-	size_t memory = TILEMEMINGB*pow(1024,3)*sizeof(double);
-	unsigned int n = 8192;//sqrt(memory);
-	unsigned int blockdim = 2048;
+	unsigned long n, blockdim, adjustedblockdim;
 
 	if (argc == 2){
-		blockdim = (unsigned int)atoi(argv[1]);
+		blockdim = (unsigned long)atoi(argv[1]);
 	} else if (argc == 3) {
-		n = (unsigned int)atoi(argv[1]);
-		blockdim = (unsigned int)atoi(argv[2]);
+		n = (unsigned long)atoi(argv[1]);
+		blockdim = (unsigned long)atoi(argv[2]);
 	} 
+	adjustedblockdim = blockdim;
+
+	// Find GPU info, and only adjust block dimension if there is not enough memory
+	int device_count;
+	gpuErrchk(cudaGetDeviceCount(&device_count));
+	kuhdaAdjustTileSizeForAvailableMemory(device_count, n, adjustedblockdim);
+	if (adjustedblockdim < blockdim) blockdim = adjustedblockdim;
+	if (blockdim > 8192) blockdim = 8192;
 
 	FILE *logfile = fopen("logfile_optimalBlockdimCublasXt.txt", "a");
 	// freopen("logfile_optimalBlockdimCublasXt.txt","a",stdout);
@@ -34,12 +37,8 @@ int main(int argc, char *argv[]) {
 	LOG(START, SUCCES);
 	printf("n = %zu, blockdim = %zu\n", n, blockdim);
 
-	// Find GPU info
-	int device_count;
-	gpuErrchk(cudaGetDeviceCount(&device_count));
-
 	// Allocate matrices
-	unsigned int m = n, k = n;
+	unsigned long m = n, k = n;
 	matrix *h_A = kuhdaMallocMdiag(n, n); // matrix A as a diagonal matrix
     matrix *h_B = kuhdaMallocMdiag(n, n); // matrix B to be filled with specific values for specific testing
     matrix *h_C = kuhdaMallocM(n, n);     // matrix C will contain results: same values at each spot as in b
@@ -57,6 +56,7 @@ int main(int argc, char *argv[]) {
   	// Perform the multiplications with CublasXt
 	cublasXtHandle_t handle;
 	CUBLASCHECK(cublasXtCreate(&handle));
+	CUBLASCHECK(cublasXtSetPinningMemMode(handle, CUBLASXT_PINNING_ENABLED));
 
 	int devices[device_count];
 	for (int device = 0; device < device_count; ++device) devices[device] = device;
@@ -64,6 +64,8 @@ int main(int argc, char *argv[]) {
 	CUBLASCHECK(cublasXtSetBlockDim(handle, blockdim));
 
 	double alpha = 1.0, beta  = 0.0;
+
+	printf("Computation start.\n");
 
   	timer.Start();
 

@@ -73,3 +73,65 @@ Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(100) STOP SUCCES
 n = 32768, blockdim = 1024
 GFLOPS = 1690..
 Checking results. Succes.
+Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(34) START SUCCES
+Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(100) STOP SUCCES
+n = 32768, blockdim = 2048
+GFLOPS = 3098..
+Checking results. Succes.
+Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(34) START SUCCES
+Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(100) STOP SUCCES
+n = 32768, blockdim = 2048
+GFLOPS = 3114..
+Checking results. Succes.
+Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(34) START SUCCES
+Wed Jul  1 11:44:45 2020, optimalBlockdimCublasXt.cu(100) STOP SUCCES
+n = 32768, blockdim = 2048
+GFLOPS = 3069..
+Checking results. Succes.
+Fri Jul  3 01:04:53 2020, optimalBlockdimCublasXt.cu(34) START SUCCES
+Fri Jul  3 01:04:53 2020, optimalBlockdimCublasXt.cu(100) STOP SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(97) STOP SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(97) STOP SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(97) STOP SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(97) STOP SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(97) STOP SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(97) STOP SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(97) STOP SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(97) STOP SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(97) STOP SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(97) STOP SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(97) STOP SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(97) STOP SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 12:13:54 2020, optimalBlockdimCublasXt.cu(29) START SUCCES
+Fri Jul  3 13:03:20 2020, optimalBlockdimCublasXt.cu(36) START SUCCES
+Fri Jul  3 13:03:20 2020, optimalBlockdimCublasXt.cu(101) STOP SUCCES
+Fri Jul  3 13:03:20 2020, optimalBlockdimCublasXt.cu(36) START SUCCES
+Fri Jul  3 13:03:20 2020, optimalBlockdimCublasXt.cu(101) STOP SUCCES
+Fri Jul  3 13:03:20 2020, optimalBlockdimCublasXt.cu(36) START SUCCES
+Fri Jul  3 13:03:20 2020, optimalBlockdimCublasXt.cu(101) STOP SUCCES

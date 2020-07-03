@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
 	int device_count;
 	gpuErrchk(cudaGetDeviceCount(&device_count));
 	kuhdaAdjustTileSizeForAvailableMemory(device_count, n, blockdim);
-	if (blockdim*2 > n) blockdim = n/2;
+	if (blockdim > 8192) blockdim = 8192;
 
 	FILE *logfile = fopen("logfile_benchmarkCublasXt.txt", "a");
 	freopen("logfile_benchmarkCublasXt.txt","a",stdout);
@@ -68,6 +68,8 @@ int main(int argc, char *argv[]) {
 	for (int device = 0; device < device_count; ++device) devices[device] = device;
 	CUBLASCHECK(cublasXtDeviceSelect(handle, device_count, devices));
 	CUBLASCHECK(cublasXtSetBlockDim(handle, blockdim));
+	CUBLASCHECK(cublasXtSetPinningMemMode(handle, CUBLASXT_PINNING_ENABLED));
+
 
 	double alpha = 1.0, beta  = 0.0;
 
