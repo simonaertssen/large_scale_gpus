@@ -615,7 +615,7 @@ void kuhdaAdjustTileSizeForAvailableMemory(const int devicecount, const unsigned
             // Q = (int) matrixsize/tilesize + (int)((double)(queryMemory - availableMemory)/queryMemory) + 1; 
             //printf("Q was %d, now Q is %d\n", n/x, Q);
 			// tilesize = (unsigned long) matrixsize/Q;
-			tilesize = sqrt(availableMemory/3/sizeof(double));
+			tilesize = sqrt(availableMemory/3/4/sizeof(double));
 			// tilesize = tilesize - (matrixsize % tilesize);
 			while (matrixsize % tilesize != 0) {
 				Q = (int)matrixsize/tilesize + 1;
