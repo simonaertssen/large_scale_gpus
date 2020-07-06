@@ -148,7 +148,6 @@ void kuhdaWarmup(int devicecount);
 void kuhdaWarmupDevice(int device); // for omp parallel calls
 size_t kuhdaAvailableMemoryOnCurrentDevice();
 void kuhdaAdjustTileSizeForAvailableMemory(int devicecount, const unsigned long matrixsize, unsigned long &tilesize);
-void kuhdaGetLargestTileDim(int devicecount, const unsigned long matrixsize, unsigned long &tilesize);
 
 cudaError_t gpuAssert(cudaError_t code, const char *file, int line);
 cublasStatus_t cublasAssert(cublasStatus_t error, const char *file, int line);
