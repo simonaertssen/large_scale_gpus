@@ -602,27 +602,27 @@ size_t kuhdaAvailableMemoryOnCurrentDevice(){
 
 // Check available memory to reduce tile size when too large
 void kuhdaAdjustTileSizeForAvailableMemory(const int devicecount, const unsigned long matrixsize, unsigned long &tilesize){
-	int device;
-	size_t Q = 2, availableMemory, queryMemory = (size_t) 3*4*tilesize*tilesize*sizeof(double), GBconv = pow(1024,3);
+	int device, streamsperdevice = 2;
+	size_t Q = 2, availableMemory, queryMemory = (size_t) 3*streamsperdevice*tilesize*tilesize*sizeof(double), GBconv = pow(1024,3);
  
     for (device = 0; device < devicecount; device++){
         // Get device properties to measure available memory:
         GPUCHECK(cudaSetDevice(device));
 		availableMemory = kuhdaAvailableMemoryOnCurrentDevice();
 		printf("Device %d, asking for %4.2lf GB but available memory %4.2lf GB\n", device, (double)queryMemory/GBconv, (double)availableMemory/GBconv);
-        if (availableMemory < queryMemory){
+        while (availableMemory < queryMemory){
             // get surplus query memory and register how many more x's we will need, + 1 is neccessary for the integer division              
             // Q = (int) matrixsize/tilesize + (int)((double)(queryMemory - availableMemory)/queryMemory) + 1; 
             //printf("Q was %d, now Q is %d\n", n/x, Q);
 			// tilesize = (unsigned long) matrixsize/Q;
-			tilesize = sqrt(availableMemory/3/4/sizeof(double));
+			tilesize = sqrt(availableMemory/(3*streamsperdevice*sizeof(double)));
 			// tilesize = tilesize - (matrixsize % tilesize);
 			while (matrixsize % tilesize != 0) {
 				++Q;
 				tilesize = matrixsize/Q;
 			}
 			// printf("%4.2lf GB available on device %d, asking for %4.2lf GB.", (double)availableMemory/GBconv, device, (double) queryMemory/GBconv);
-			queryMemory = 3*tilesize*tilesize*sizeof(double);
+			queryMemory = 3*streamsperdevice*tilesize*tilesize*sizeof(double);
             printf("Changed tile size to %d. Now asking for %4.2lf GB..\n", tilesize, (double) queryMemory/GBconv);
 		} 
 	}
