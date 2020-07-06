@@ -603,7 +603,7 @@ size_t kuhdaAvailableMemoryOnCurrentDevice(){
 // Check available memory to reduce tile size when too large
 void kuhdaAdjustTileSizeForAvailableMemory(const int devicecount, const unsigned long matrixsize, unsigned long &tilesize){
 	int device;
-	size_t Q = 1, availableMemory, queryMemory = (size_t) 3*tilesize*tilesize*sizeof(double), GBconv = pow(1024,3);
+	size_t Q = 2, availableMemory, queryMemory = (size_t) 3*tilesize*tilesize*sizeof(double), GBconv = pow(1024,3);
  
     for (device = 0; device < devicecount; device++){
         // Get device properties to measure available memory:
@@ -618,7 +618,7 @@ void kuhdaAdjustTileSizeForAvailableMemory(const int devicecount, const unsigned
 			tilesize = sqrt(availableMemory/3/4/sizeof(double));
 			// tilesize = tilesize - (matrixsize % tilesize);
 			while (matrixsize % tilesize != 0) {
-				Q = (int)matrixsize/tilesize + 1;
+				++Q;
 				tilesize = matrixsize/Q;
 			}
 			// printf("%4.2lf GB available on device %d, asking for %4.2lf GB.", (double)availableMemory/GBconv, device, (double) queryMemory/GBconv);

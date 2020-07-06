@@ -39,44 +39,42 @@ int main(int argc, char* argv[]) {
     }      
 
     // Set matrix size
-    unsigned int n = 5000;
+    unsigned long n, x;
     if (argc > 1){
-        n = (unsigned int)atoi(argv[1]);
-        if (n >= 73029) {
-            n = 73028;
-            // In this case, n exceeds the size necessary for 128 GB of data on the host for three matrices: sqrt(128 * pow(1000, 3) / 8 / 3) = 73029
-            printf("Matrix dimension too large, setting matrix size to %d..\n", n);
-        }
+        n = (unsigned long)atoi(argv[1]);
+        // if (n >= 73029) {
+        //     n = 73028;
+        //     // In this case, n exceeds the size necessary for 128 GB of data on the host for three matrices: sqrt(128 * pow(1000, 3) / 8 / 3) = 73029
+        //     printf("Matrix dimension too large, setting matrix size to %d..\n", n);
+        // }
     }
-    unsigned int m = n, k = n;
-
-    // Set tile size
-    unsigned int numtilesperdim = 4, x = n/numtilesperdim; 
     if (argc > 2){
-        numtilesperdim = (unsigned int)atoi(argv[2]);
-        x = n/numtilesperdim;
-        if (x%n != 0) x = n/4;
-        if (x > n ) {
-            x = n/2;
-            printf("Block size too large, setting block size to %d..\n", x);
-        } else if (x >= 63245){
-            // In this case, x exceeds the size necessary for 32 GB of data on a device: sqrt(32 * pow(1000, 3) / 8) = 63245
-            x /= 2;
-        } else if (numtilesperdim >= 512){
-            // Then we register the number of tiles
-            x = numtilesperdim;
-            numtilesperdim = n/x;
-        }
+        x = (unsigned long)atoi(argv[2]);
+        // x = n/numtilesperdim;
+        // if (x%n != 0) x = n/4;
+        // if (x > n ) {
+        //     x = n/2;
+        //     printf("Block size too large, setting block size to %d..\n", x);
+        // } else if (x >= 63245){
+        //     // In this case, x exceeds the size necessary for 32 GB of data on a device: sqrt(32 * pow(1000, 3) / 8) = 63245
+        //     x /= 2;
+        // } else if (numtilesperdim >= 512){
+        //     // Then we register the number of tiles
+        //     x = numtilesperdim;
+        //     numtilesperdim = n/x;
+        // }
     }    
 
     // Check dimensions with regards to the available memory:
     kuhdaAdjustTileSizeForAvailableMemory(devicecount, n, x);
 
     printf("Matrix dimension = %lu, block size = %lu.. \n", n, x);
-    int tileop, numtilestotal = numtilesperdim*numtilesperdim, numtilesperdev = numtilestotal/devicecount, streamop, numtilesperstream = numtilesperdev/MAXSTREAMSPERD;
+    int tileop, numtilesperdim = n/x, numtilestotal = numtilesperdim*numtilesperdim, numtilesperdev = numtilestotal/devicecount;
+    int streamop, numtilesperstream = numtilesperdev/MAXSTREAMSPERD;
     numtilesperstream = numtilesperstream < 1 ? 1 : numtilesperstream;
 
-	// Containers for host and device matrices
+    // Containers for host and device matrices
+    unsigned long m = n, k = n;    
 	matrix *h_A = kuhdaMallocMdiag(n, n); // matrix A as a diagonal matrix
     matrix *h_B = kuhdaMallocMdiag(n, n); // matrix B to be filled with specific values for specific testing
     matrix *h_C = kuhdaMallocM(n, n);     // matrix C will contain results: same values at each spot as in b
