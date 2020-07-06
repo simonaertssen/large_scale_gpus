@@ -8,7 +8,7 @@ int main(void){
 
     char command[sizeof(unsigned long) + 100];
 
-    for (n = 1024; n <= 65536; n += 1024){
+    for (n = 1024; n <= 65536; n *= 2){
         for (rep = 0; rep < reps; ++rep){
             iter = 0;
             do {

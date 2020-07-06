@@ -10,12 +10,15 @@
 
 
 /*
-This script builds on ADM_Naive.cu, but takes into account the functionality of BLASX with statis job scheduling.
-Each device is associated with different tiles of C, and each device only computes it's own tiles of C (no computational overlap and no synchronisation between devices).
+This script builds on ADM_Direct.cu, but makes use of peer to peer communication between devices.
+Each device is associated with different tiles of C, and each device only computes it's own tiles of C.
 All jobs are statically scheduled: one for loop over the devices, one for loop for every of the four streams on the device. 
+Tiles are sent to the devices and then broadcasted between devices with a fast connection.
+For the PS9, the connection between host and devices 2 and 3 is the fastest. Then only half the speed between host and device 0.
+So: send to device 0 -> 1 and send to device 2 -> 3
 
 run with
-nvcc -O3 -Xcompiler -fopenmp -lcublas ../DIEKUHDA/kuhda.cu ADM_Direct.cu && ./a.out 1000 
+nvcc -O3 -Xcompiler -fopenmp -lcublas ../DIEKUHDA/kuhda.cu ADM_DirectPeerP9.cu 
 */
 
 #define LOG(X,Y) fprintf(logfile, "%s, %s(%d) " #X " " #Y "\n", __TIMESTAMP__, __FILE__, __LINE__);
@@ -28,11 +31,11 @@ void TileGPUToHostBuff(unsigned long rowstart, unsigned long rowstop, unsigned l
 
 int main(int argc, char* argv[]) {
     // Parallel device warmup by handle creation instead of kuhdaWarmupDevice(device);
-    int device, devicecount = 4;
+    int device, peerdevice, devicecount = 4;
 
-    FILE *logfile = fopen("logfile_benchmarkADM_Direct.txt", "a");
+    FILE *logfile = fopen("logfile_benchmarkADM_DirectPeerP9.txt", "a");
 	// freopen("logfile_benchmarkCublasXt.txt","a",stdout);
-	FILE *output = fopen("results_benchmarkADM_Direct.txt", "a");
+	FILE *output = fopen("results_benchmarkADM_DirectPeerP9.txt", "a");
 	if (logfile == NULL || output == NULL) {
 		fclose(logfile);
 		fclose(output);
@@ -45,6 +48,11 @@ int main(int argc, char* argv[]) {
     for (device = 0; device < devicecount; device ++){
         GPUCHECK(cudaSetDevice(device));
         CUBLASCHECK(cublasCreate(&handles[device]));
+
+        // Make device able to send and receive data from peers:
+		for (peerdevice = 0; peerdevice < devicecount; ++peerdevice){
+			if (peerdevice == device) continue;
+			gpuErrchk(cudaDeviceEnablePeerAccess(peerdevice, 0));
     }      
 
     // Set matrix size
