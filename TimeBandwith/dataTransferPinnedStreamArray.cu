@@ -8,8 +8,8 @@ int main(){
 	// Set verbose to 0 to mute output
 	int verbose = 0;
 
-	unsigned long n = 12000, size = n * n * sizeof(double);
-	double printmem = size / 1.0e9;
+	unsigned long n = 40200, size = n * n * sizeof(double);
+	double printmem = size / pow(1024,3);
 	printf("Masuring: n = %d\nSending %.4f GB of memory between host and devices\n", n, printmem);
 
 	// Get the overall structure setup
