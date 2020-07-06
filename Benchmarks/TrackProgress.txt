@@ -1,0 +1,5 @@
+Optimal blockdim cublasXt:    P9SH
+Benchmark cublasXt:           P9SH
+Benchmark ADM_Direct: 
+
+
