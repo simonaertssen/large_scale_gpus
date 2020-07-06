@@ -18,7 +18,6 @@ int main(int argc, char *argv[]) {
 		n = (unsigned long)atoi(argv[1]);
 		blockdim = (unsigned long)atoi(argv[2]);
 	} 
-	adjustedblockdim = blockdim;
 
 	// Find GPU info, and only adjust block dimension if there is not enough memory
 	int device_count;

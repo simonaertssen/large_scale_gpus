@@ -7,15 +7,11 @@
 
 // Run with nvcc -o benchmarkCublasXt -O3 -lcublas ../DIEKUHDA/kuhda.cu benchmarkCublasXt.cu && ./benchmarkCublasXt
 
-#define TILEMEMINGB 1
 #define LOG(X,Y) fprintf(logfile, "%s, %s(%d) " #X " " #Y "\n", __TIMESTAMP__, __FILE__, __LINE__);
 
 int main(int argc, char *argv[]) {
 	// Regulate input:
-	unsigned long n = 16384, blockdim = 1024;
-
-	// for (n = 1024; n <= 32768; n+=1024) printf("%zu ", n);
-	// return 0;
+	unsigned long n = 0, blockdim = 0;
 
 	// Set matrix size
     if (argc > 1){
@@ -27,22 +23,23 @@ int main(int argc, char *argv[]) {
     if (argc > 2){
         blockdim = (unsigned long)atoi(argv[2]);
 	}
+	if (blockdim > 4096) blockdim = 4096;
 
 	// Find GPU info and adjust tile size
 	int device_count;
 	gpuErrchk(cudaGetDeviceCount(&device_count));
-	kuhdaAdjustTileSizeForAvailableMemory(device_count, n, blockdim);
-	if (blockdim > 8192) blockdim = 8192;
+	// kuhdaAdjustTileSizeForAvailableMemory(device_count, n, blockdim);
 
 	FILE *logfile = fopen("logfile_benchmarkCublasXt.txt", "a");
-	freopen("logfile_benchmarkCublasXt.txt","a",stdout);
+	// freopen("logfile_benchmarkCublasXt.txt","a",stdout);
 	FILE *output = fopen("results_benchmarkCublasXt.txt", "a");
 	if (logfile == NULL || output == NULL) {
+		fclose(logfile);
 		fclose(output);
     return 1;
   	}
 	LOG(START, SUCCES);
-	printf("n = %zu, blockdim = %zu\n", n, blockdim);
+	printf("n = %lu, blockdim = %lu\n", n, blockdim);
 
 	// Allocate matrices
 	unsigned long m = n, k = n;

@@ -1,0 +1,39 @@
+# Run me with make -f makefile_name
+# Directory and file names
+FILE := ADM_Direct
+
+# Tend to the right files
+
+
+FILE := $(patsubst "%",%,$(FILE))
+
+CALL := "call_"
+CALL := $(patsubst "%",%,$(CALL))
+R := "run"
+R := $(patsubst "%",%,$(R))
+
+OPT = -O3
+LIB = -lcublas -Xcompiler -fopenmp
+P9N = -Xcompiler -mno-float128
+
+CC = nvcc
+CFLAGS = $(OPT) $(LIB) $(P9N)
+#CFLAGS = $(OPT) $(LIB)
+
+
+# the build target executable:
+TARGET = $(FILE)
+DKDLIB = ../../DIEKUHDA/kuhda.cu
+
+# the executable responsible for calling the target:
+SYSTEMRUN = $(DIR)$(CALL)$(FILE)
+RUN = $(R)
+
+make : $(TARGET).cu
+	@echo  ------Start of the program
+	$(CC) -o $(TARGET) $(CFLAGS) $(DKDLIB) $(TARGET).cu
+	$(CC) -o $(RUN) $(P9N) $(SYSTEMRUN).cu
+	#$(CC) -o $(RUN) $(SYSTEMRUN).cu
+	./$(RUN)
+	@echo  ------End of the program
+
