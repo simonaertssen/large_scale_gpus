@@ -131,7 +131,8 @@ int main(int argc, char* argv[]) {
             for (streamop = 0; streamop < numtilesperstream; ++streamop){
                 // Register indices of C tiles
                 // tileindex = (device*numstreamsperdevice + stream)*numtilesperstream + streamop; 
-                tileindex = (stream*devicecount + device)*numtilesperstream + streamop; 
+                // tileindex = (stream*devicecount + device)*numtilesperstream + streamop; 
+                tileindex = tileindex = device + (stream*numtilesperstream + streamop)*devicecount;
                 Crow = tileindex/numtilesperdim; Ccol = tileindex%numtilesperdim;
 
                 // Set contents of C to zero for use as an accumulator:

@@ -4,11 +4,11 @@
 int main(void){
 
     int status = 0, rep, reps = 3, iter, maxiter = 2;
-    unsigned long n = 16384, blockdim = 0;
+    unsigned long n = 32768, blockdim = 0;
 
     char command[2*sizeof(unsigned long) + 100];
 
-    for (blockdim = 1024; blockdim <= 16384; blockdim += 1024){
+    for (blockdim = 1024; blockdim <= n/2; blockdim += 1024){
         for (rep = 0; rep < reps; ++rep){
             iter = 0;
             do {

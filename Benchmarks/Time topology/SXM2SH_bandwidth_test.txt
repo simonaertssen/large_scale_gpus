@@ -1,0 +1,8 @@
+Masuring: n = 40200
+Sending 12.0404 GB of memory between host and devices
+	GPU0	GPU1	GPU2	GPU3	host    
+GPU0      X     48.22   24.11   48.23   12.77
+GPU1    45.29     X     44.60   23.81   12.48
+GPU2    24.11   48.23     X     23.76   12.78
+GPU3    48.23   24.11   23.07     X     12.85
+host    12.77   12.48   12.78   12.85     X  
