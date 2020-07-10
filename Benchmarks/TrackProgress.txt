@@ -3,5 +3,10 @@ Benchmark cublasXt:           P9SH
 
 Optimal blockdim ADM_Direct:  P9SH
 Benchmark ADM_Direct:         P9SH
+Optimal stream nr AD_Direct:  P9SH
 
 Time Topology:                P9SH    SXM2SH
+
+Optimal blockdim ADM_DirectPeer: 
+Benchmark ADM_Direct:         
+
