@@ -23,7 +23,7 @@ int main(int argc, char *argv[]) {
     if (argc > 2){
         blockdim = (unsigned long)atoi(argv[2]);
 	}
-	if (blockdim > 4096) blockdim = 4096;
+	if (blockdim > 9126) blockdim = 9126;
 
 	// Find GPU info and adjust tile size
 	int device_count;
