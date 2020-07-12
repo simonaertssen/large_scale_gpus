@@ -7,9 +7,9 @@
 // With this script we are following some of the ideas from Jochen Kreuz to perform a tiled multiplication using cublas.
 
 
-int main(int argc, char* argv[]) {   
+int main(int argc, char* argv[]) {
 
-    // set matrix size 
+    // set matrix size
     unsigned int n = 5000;
     if (argc > 1){
         n = (unsigned int)atoi(argv[1]);
@@ -20,8 +20,8 @@ int main(int argc, char* argv[]) {
         }
     }
     unsigned int m = n, k = n;
-    
-    // set tile size 
+
+    // set tile size
     unsigned int x = n/2;
     if (argc > 2){
         x = (unsigned int)atoi(argv[2]);
@@ -76,7 +76,7 @@ int main(int argc, char* argv[]) {
     printf("Computation start\n");
     timer.Start();
     gpuErrchk(cudaEventRecord(mainstart, mainstream));
-    
+
     int streamindex = 0, currentdevice = 0;
     int mtile = 0, ntile = 0, ktile = 0;
     // Loop over rows of A:
@@ -96,7 +96,7 @@ int main(int argc, char* argv[]) {
 
                 TileHostToGPU(mtile*x, (mtile+1)*x, ktile*x, (ktile+1)*x, h_A, d_All[currentdevice][0], d_streams[streamindex]); // Tile A
                 TileHostToGPU(ktile*x, (ktile+1)*x, ntile*x, (ntile+1)*x, h_B, d_All[currentdevice][1], d_streams[streamindex]); // Tile B
-                
+
                 // damn man dads fast
                 kuhdamm(d_All[currentdevice][0], d_All[currentdevice][1], d_All[currentdevice][2], d_streams[streamindex], 0);
 
@@ -126,14 +126,14 @@ int main(int argc, char* argv[]) {
     // Free all
     printf("Cleaning up ..\n");
     gpuErrchk(cudaSetDevice(0));
-    gpuErrchk(cudaStreamDestroy(mainstream));	
+    gpuErrchk(cudaStreamDestroy(mainstream));
     gpuErrchk(cudaEventDestroy(mainstart));
 	gpuErrchk(cudaEventDestroy(mainstop));
 
 	kuhdaFreeM(h_A, 'p');
 	kuhdaFreeM(h_B, 'p');
     kuhdaFreeM(h_C, 'p');
-    
+
     #pragma omp parallel for private(device, abc, stream) num_threads(NUMTHREADS)
     for (device = 0; device < devicecount; device++){
         gpuErrchk(cudaSetDevice(device));
@@ -148,6 +148,6 @@ int main(int argc, char* argv[]) {
         // Takes NO arguments
         gpuErrchk(cudaDeviceReset());
     }
-    
+
 	return 0;
 }
