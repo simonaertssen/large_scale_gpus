@@ -3,7 +3,7 @@
 #include "omp.h"
 
 #define NUMTHREADSBUFF 16
-#define MAXSTREAMSPERD 2
+#define MAXSTREAMSPERD 4
 #define A 0
 #define B 1
 #define C 2

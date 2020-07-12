@@ -14,7 +14,7 @@ R := $(patsubst "%",%,$(R))
 
 OPT = -O3
 LIB = -lcublas
-P9N = -Xcompiler -mno-float128
+#P9N = -Xcompiler -mno-float128
 
 CC = nvcc
 CFLAGS = $(OPT) $(LIB) $(P9N)

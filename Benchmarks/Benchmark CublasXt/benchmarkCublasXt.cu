@@ -3,9 +3,11 @@
 #include <cublasXt.h>
 #include "cuda.h"
 
+#define NUMTHREADSBUFF 16
+
 // With this script, we aim to benchmark the performance of CublasXt. The maximum size 
 
-// Run with nvcc -o benchmarkCublasXt -O3 -lcublas ../DIEKUHDA/kuhda.cu benchmarkCublasXt.cu && ./benchmarkCublasXt
+// Run with nvcc -o benchmarkCublasXt -O3 -lcublas -Xcompiler -fopenmp ../DIEKUHDA/kuhda.cu benchmarkCublasXt.cu && ./benchmarkCublasXt
 
 #define LOG(X,Y) fprintf(logfile, "%s, %s(%d) " #X " " #Y "\n", __TIMESTAMP__, __FILE__, __LINE__);
 
@@ -23,7 +25,7 @@ int main(int argc, char *argv[]) {
     if (argc > 2){
         blockdim = (unsigned long)atoi(argv[2]);
 	}
-	if (blockdim > 9126) blockdim = 9126;
+	if (blockdim > 4192) blockdim = 4192;
 
 	// Find GPU info and adjust tile size
 	int device_count;
