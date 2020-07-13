@@ -39,7 +39,7 @@ for i = 1:l/3
     mGFLOPS(i) = mean(GFLOPS(i:(i+3)));
     vGFLOPS(i) = std(GFLOPS(i:(i+3)));
 end
-a = tinv(0.05,2)*vGFLOPS/sqrt(3);
+a = tinv(0.95,2)*vGFLOPS/sqrt(3);
 
 hold on; box on;
 counter = [blockdim(1:3:end); flipud(blockdim(1:3:end))];
@@ -55,6 +55,8 @@ xlabel('\fontname{SansSerif}Tile dimension T', 'FontSize', 16)
 ylabel('\fontname{SansSerif}Performance [GFLOPS]', 'FontSize', 16)
 xticks(1024:1024:14336)
 xtickangle(45)
+ylim([0, 15000])
+yticks(0:3000:15000)
 
 a = get(gca,'XTickLabel');
 set(gca,'XTickLabel',a,'FontName','SansSerif','fontsize',12)
@@ -77,7 +79,7 @@ for i = 1:l/3
     mGFLOPS(i) = mean(GFLOPS(i:(i+3)));
     vGFLOPS(i) = std(GFLOPS(i:(i+3)));
 end
-a = tinv(0.05,2)*vGFLOPS/sqrt(3);
+a = tinv(0.95,2)*vGFLOPS/sqrt(3);
 
 hold on; box on;
 counter = [blockdim(1:3:end); flipud(blockdim(1:3:end))];
@@ -93,6 +95,10 @@ xlabel('\fontname{SansSerif}Tile dimension T', 'FontSize', 16)
 ylabel('\fontname{SansSerif}Performance [GFLOPS]', 'FontSize', 16)
 xticks(blockdim(1:3:end))
 xlim([0, blockdim(end) + 1024])
+
+ylim([0, 15000])
+yticks(0:3000:15000)
+
 xtickangle(45)
 
 a = get(gca,'XTickLabel');
@@ -140,6 +146,8 @@ xlabel('\fontname{SansSerif}Tile dimension T', 'FontSize', 16)
 ylabel('\fontname{SansSerif}Performance [GFLOPS]', 'FontSize', 16)
 xticks(1024:1024:14336)
 xtickangle(45)
+ylim([0, 7000])
+yticks(0:1000:7000)
 
 a = get(gca,'XTickLabel');
 set(gca,'XTickLabel',a,'FontName','SansSerif','fontsize',12)
@@ -179,6 +187,8 @@ ylabel('\fontname{SansSerif}Performance [GFLOPS]', 'FontSize', 16)
 xticks(blockdim(1:3:end))
 xlim([0, blockdim(end) + 1024])
 xtickangle(45)
+ylim([0, 7000])
+yticks(0:1000:7000)
 
 a = get(gca,'XTickLabel');
 set(gca,'XTickLabel',a,'FontName','SansSerif','fontsize',12)
