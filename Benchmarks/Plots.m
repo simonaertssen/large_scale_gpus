@@ -229,13 +229,25 @@ plot(n(1:3:end), mGFLOPS + a, ':k', 'LineWidth', 1);
 plot(n(1:3:end), max(0, mGFLOPS - a), ':k', 'LineWidth', 1);
 
 %title(['\fontname{SansSerif}',' N = ',num2str(Ns(1))], 'FontSize', 24);
-xlabel('\fontname{SansSerif}Tile dimension T', 'FontSize', 16)
+xlabel('\fontname{SansSerif}Matrix dimension N', 'FontSize', 16)
 ylabel('\fontname{SansSerif}Performance [GFLOPS]', 'FontSize', 16)
+xlim([0, n(end) + 1024])
+
 xticks(n(1:3:end))
 xtickangle(45)
+ylim([0, 5000])
+yticks(0:1000:5000)
 
 ax = get(gca,'XTickLabel');
 set(gca,'XTickLabel',ax,'FontName','SansSerif','fontsize',12)
+
+yyaxis right
+plot(n(1:3:end), blockdim(1:3:end), '-xk', 'LineWidth', 2);
+ylim([0, 10000])
+yticks(0:1024:8192)
+ylabel('\fontname{SansSerif}Tile dimension T', 'FontSize', 16)
+ax = gca;
+ax.YColor = 'k';
 
 print(f3, 'Benchmark CublasXt/Finalresults_benchmarkCublasXtSXM2SH.png', '-dpng', '-r400')
 
@@ -272,13 +284,25 @@ plot(n(1:3:end), mGFLOPS + a, ':k', 'LineWidth', 1);
 plot(n(1:3:end), max(0, mGFLOPS - a), ':k', 'LineWidth', 1);
 
 %title(['\fontname{SansSerif}',' N = ',num2str(Ns(1))], 'FontSize', 24);
-xlabel('\fontname{SansSerif}Tile dimension T', 'FontSize', 16)
+xlabel('\fontname{SansSerif}Matrix dimension N', 'FontSize', 16)
 ylabel('\fontname{SansSerif}Performance [GFLOPS]', 'FontSize', 16)
 xticks(n(1:3:end))
+xlim([0, n(end) + 1024])
+
 xtickangle(45)
+ylim([0, 5000])
+yticks(0:1000:5000)
 
 ax = get(gca,'XTickLabel');
 set(gca,'XTickLabel',ax,'FontName','SansSerif','fontsize',12)
+
+yyaxis right
+plot(n(1:3:end), blockdim(1:3:end), '-xk', 'LineWidth', 1);
+ylim([0, 10000])
+yticks(0:1024:8192)
+ylabel('\fontname{SansSerif}Tile dimension T', 'FontSize', 16)
+ax = gca;
+ax.YColor = 'k';
 
 print(f4, 'Benchmark CublasXt/Finalresults_benchmarkCublasXtP9SH.png', '-dpng', '-r400')
 
