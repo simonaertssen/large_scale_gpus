@@ -1,9 +1,9 @@
 Optimal blockdim cublasXt:             P9SH    SXM2SH
 Benchmark cublasXt:                    P9SH    SXM2SH
 
-Optimal blockdim ADM_Direct:           P9SH    
-Benchmark ADM_Direct:                  P9SH
-Optimal stream nr AD_Direct:           P9SH
+Optimal blockdim ADM_Direct:           P9SH    SXM2SH
+Benchmark ADM_Direct:                  P9SH    SXM2SH
+Optimal stream nr AD_Direct:           P9SH    SXM2SH
 
 Time Topology:                         P9SH    SXM2SH
 

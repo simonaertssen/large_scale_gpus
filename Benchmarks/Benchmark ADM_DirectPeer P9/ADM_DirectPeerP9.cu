@@ -1,7 +1,6 @@
 #include <stdio.h>
 #include "../../DIEKUHDA/kuhda.h"
 #include "omp.h"
-#include <time.h>
 
 #define NUMTHREADSBUFF 16
 #define MAXSTREAMSPERD 2
@@ -31,7 +30,10 @@ void TileGPUToHostBuff(unsigned long rowstart, unsigned long rowstop, unsigned l
 
 int main(int argc, char* argv[]) {
     // Parallel device warmup by handle creation instead of kuhdaWarmupDevice(device);
-    int device, peerdevice, devicecount = 4;
+    int devicecounter, device, devicecount = 4;
+    // int d[4] = {0, 1, 2, 3};
+    int d[4] = {0, 3, 1, 2};
+
 
     FILE *logfile = fopen("logfile_benchmarkADM_DirectPeerP9.txt", "a");
 	// freopen("logfile_benchmarkCublasXt.txt","a",stdout);
@@ -43,6 +45,7 @@ int main(int argc, char* argv[]) {
   	}
 	LOG(START, SUCCES);
 
+    omp_set_nested(true);
     cublasHandle_t handles[devicecount]; 
     #pragma omp parallel for private(device) num_threads(devicecount)
     for (device = 0; device < devicecount; device ++){
@@ -84,84 +87,76 @@ int main(int argc, char* argv[]) {
 
     // Counters for streams: number of streams is number of operations per device, but adjust for less streams if large tiles
     int stream, numstreamsperdevice = numtilesperdev > MAXSTREAMSPERD ? MAXSTREAMSPERD : numtilesperdev;
-    // printf("numtilestotal = %d, numtilesperdev = %d, numtilesperstream = %d, numstreamsperdevice = %d\n", numtilestotal, numtilesperdev, numtilesperstream, numstreamsperdevice);
+    printf("numtilestotal = %d, numtilesperdev = %d, numtilesperstream = %d, numstreamsperdevice = %d\n", numtilestotal, numtilesperdev, numtilesperstream, numstreamsperdevice);
     
     int abc, ABC = 3; 
     matrix *d_All[devicecount][ABC][numstreamsperdevice];   // matrix tiles on each device per stream
 
-    // Wait procedures
-    int wait[devicecount][numstreamsperdevice];
-    int msec = 100;
-    struct timespec ts;
-    ts.tv_sec = msec / 1000;
-    ts.tv_nsec = (msec % 1000) * 1000000;
-
     // Cuda dependencies
     cudaStream_t d_streams[devicecount][numstreamsperdevice];
-    cudaStream_t p_streams[devicecount][numstreamsperdevice];
     cudaEvent_t streamReady[devicecount][numstreamsperdevice];
     matrix *membuffs[devicecount][numstreamsperdevice][2];
 
     MatMulTimer timer;
+    int firstMemset[devicecount][numstreamsperdevice];
 
     // Parallel device memory and dependency allocation
     // printf("Allocating tiles A, B and C on %d devices..\n", devicecount);
-    #pragma omp parallel for private(device, abc, stream) num_threads(devicecount)
+    #pragma omp parallel for private(device, devicecounter, abc, stream) num_threads(devicecount)
     // Creat all dependencies:
-    for (device = 0; device < devicecount; ++device){
+    for (devicecounter = 0; devicecounter < devicecount; ++devicecounter){
+        device = d[devicecounter];
         GPUCHECK(cudaSetDevice(device));
-        // Make device able to send and receive data from peers:
-		for (peerdevice = 0; peerdevice < devicecount; ++peerdevice){
-			if (peerdevice == device) continue;
-            // GPUCHECK(cudaDeviceEnablePeerAccess(peerdevice, 0));
-        }
-
+    
         #pragma omp parallel for private(stream, abc) num_threads(numstreamsperdevice)
         for (stream = 0; stream < numstreamsperdevice; ++stream){
             for (abc = 0; abc < ABC; ++abc){
                 d_All[device][abc][stream] = kuhdaMallocDeviceM(x, x);
             }
             GPUCHECK(cudaStreamCreate(&d_streams[device][stream]));
-            GPUCHECK(cudaStreamCreate(&p_streams[device][stream]));
-            GPUCHECK(cudaEventCreateWithFlags(&streamReady[device][stream], cudaEventBlockingSync));
-            // GPUCHECK(cudaStreamCreateWithFlags(&d_streams[device][stream], cudaStreamNonBlocking));
+            GPUCHECK(cudaEventCreateWithFlags(&streamReady[device][stream], cudaEventDisableTiming));
             membuffs[device][stream][0] = kuhdaMallocMP(x, x);
             membuffs[device][stream][1] = kuhdaMallocMP(x, x);
-            wait[device][stream] = 0;
+            firstMemset[device][stream] = 1;
         }
     }
 
     // Main loop counters:
-    int Arow, Acol, Brow, Bcol, Crow, Ccol, tileindex, printonce = 0; 
+    int Arow, Acol, Brow, Bcol, Crow, Ccol, tileindex, printonce = 1; 
 
     printf("Computation start..\n");
     timer.Start();
 
-    // Parallel device multiplication loop
-    #pragma omp parallel for num_threads(devicecount)
-    for (device = 0; device < devicecount; device++){
-        GPUCHECK(cudaSetDevice(device));
+    // Loop over streams per device
+    #pragma omp parallel for private(stream, streamop, tileop) num_threads(numstreamsperdevice) 
+    for (stream = 0; stream < numstreamsperdevice; ++stream){
 
-        // Loop over streams per device
-        #pragma omp parallel for private(stream, streamop, tileindex, tileop, Arow, Acol, Brow, Bcol, Crow, Ccol) num_threads(numstreamsperdevice) 
-        for (stream = 0; stream < numstreamsperdevice; ++stream){
-            // Loop over all operations on C per stream
-            // #pragma omp parallel for private(tileindex, tileop, Arow, Acol, Brow, Bcol, Crow, Ccol) num_threads(numtilesperstream)
-            for (streamop = 0; streamop < numtilesperstream; ++streamop){
-                // Register indices of C tiles
-                // tileindex = (device*numstreamsperdevice + stream)*numtilesperstream + streamop; 
-                tileindex = device + (stream*numtilesperstream + streamop)*devicecount; //(streamop*devicecount + device)*numstreamsperdevice + stream; 
-                // printf("device %d, stream %d, tileindex %d: test = %d\n", device, stream, tileindex, (tileindex+1) % numtilesperdim);
-                Crow = tileindex/numtilesperdim; Ccol = tileindex%numtilesperdim;
+        // Loop over all operations on C per stream
+        // #pragma omp parallel for private(tileindex, tileop, Arow, Acol, Brow, Bcol, Crow, Ccol) num_threads(numtilesperstream)
+        for (streamop = 0; streamop < numtilesperstream; ++streamop){
 
-                // Set contents of C to zero for use as an accumulator:
-                GPUCHECK(cudaMemsetAsync(d_All[device][C][stream]->data, 0, x*x*sizeof(double), d_streams[device][stream]));
-                // printf("Dev %d, stream %d: tileindex = %d, (%d,%d)\n", device, stream, tileindex, Crow, Ccol);
+            // Loop over all tile operations per stream operation
+            for (tileop = 0; tileop < numtilesperdim; ++tileop){
+                printf("-------stream %d streamop %d tileop %d \n", stream, streamop, tileop);
+                // Parallel device multiplication loop: only here do we actually set the device and perform the transfers
+                #pragma omp parallel private(devicecounter, device, tileindex, Arow, Acol, Brow, Bcol, Crow, Ccol) num_threads(devicecount)
+                {
+                #pragma omp for
+                for (devicecounter = 0; devicecounter < devicecount; devicecounter++){
+                    device = d[devicecounter];
+                    GPUCHECK(cudaSetDevice(device));
+                    // Register indices of C tiles
+                    tileindex = devicecounter + (stream*numtilesperstream + streamop)*devicecount;
+                    Crow = tileindex/numtilesperdim; Ccol = tileindex%numtilesperdim;
 
-                printonce = 1;
-                // Loop over all tiles of A and B to copy: Arow = Crow and Bcol = Ccol
-                // #pragma omp parallel for private(tileop, Arow, Acol, Brow, Bcol) num_threads(numtilesperdim)
-                for (tileop = 0; tileop < numtilesperdim; ++tileop){
+                    // Set contents of C to zero for use as an accumulator:
+                    if (tileop == 0 && firstMemset[device][stream] == 0) {
+                        GPUCHECK(cudaMemsetAsync(d_All[device][C][stream]->data, 0, x*x*sizeof(double), d_streams[device][stream]));
+                    } else {
+                        firstMemset[device][stream] = 0;
+                    }
+
+                    // Loop over all tiles of A and B to copy: Arow = Crow and Bcol = Ccol
                     Arow = Crow;   Acol = tileop;
                     Brow = tileop; Bcol = Ccol;
 
@@ -169,60 +164,56 @@ int main(int argc, char* argv[]) {
                     // If the following C tile still has the same row of A, send the tile between devices, otherwise not.
                     // Check first if the current tile is not the last in the row (+1 for 0-based indexing).
                     // Then check whether the next tile is on the same row, which should be the same multiple of numtilesperdim.
-                    // printf("%d ?= %d\n", (tileindex)/numtilesperdim, (tileindex+1)/numtilesperdim);
-                    if (device == 0 || device == 2){
+                    if (devicecounter == 0 || devicecounter == 2){
                         TileHostToGPUBuff(Arow*x, (Arow+1)*x, Acol*x, (Acol+1)*x, h_A, d_All[device][A][stream], d_streams[device][stream], membuffs[device][stream][0]); // Tile A
-                        // Now send from 0->1 and from 2->3
+                        GPUCHECK(cudaStreamSynchronize(d_streams[device][stream]));
+                        // Now send from 0->2 and from 1->3
                         if (((tileindex+1) % numtilesperdim != 0) && Crow == (tileindex+1)/numtilesperdim){
-                            GPUCHECK(cudaStreamSynchronize(d_streams[device][stream]));
-                            // inputs are: (void* dst, int  dstDevice, const void* src, int  srcDevice, size_t count, cudaStream_t stream = 0)
-                            GPUCHECK(cudaMemcpyPeerAsync(d_All[device+1][A][stream]->data, device+1, d_All[device][A][stream]->data, device, x*x*sizeof(double), d_streams[device][stream]));
-                            // GPUCHECK(cudaMemcpyAsync(d_All[device+1][A][stream]->data, d_All[device][A][stream]->data, x*x*sizeof(double), cudaMemcpyDeviceToDevice));
-                            GPUCHECK(cudaStreamSynchronize(d_streams[device][stream]));
+                            GPUCHECK(cudaMemcpyPeerAsync(d_All[d[devicecounter+1]][A][stream]->data, d[devicecounter], d_All[device][A][stream]->data, device, x*x*sizeof(double), d_streams[device][stream]));
                             if (printonce) printf("%d: Sending from %d to %d\n", device, tileindex, tileindex+1);
                             GPUCHECK(cudaEventRecord(streamReady[device][stream], d_streams[device][stream]));
-                            wait[device][stream] = 1;
                         } else {
                             if (printonce) printf("%d: No sending possible from %d to %d\n", device, tileindex, tileindex+1);
                         }
-                    } else {
+                    }
+                }
+                
+                // Now get the tiles if transferred between devices:
+                //#pragma omp parallel for private(device, tileindex, Arow, Acol, Brow, Bcol, Crow, Ccol) num_threads(devicecount)
+                #pragma omp for
+                for (devicecounter = 0; devicecounter < devicecount; devicecounter++){
+                    device = d[devicecounter];
+                    GPUCHECK(cudaSetDevice(device));
+                    tileindex = devicecounter + (stream*numtilesperstream + streamop)*devicecount;
+                    Crow = tileindex/numtilesperdim; Ccol = tileindex%numtilesperdim; Arow = Crow; Acol = tileop; Brow = tileop; Bcol = Ccol;
+
+                    if (devicecounter == 1 || devicecounter == 3){
                         if (Crow == (tileindex-1)/numtilesperdim){
-                            // GPUCHECK(cudaEventSynchronize(streamReady[device-1][stream]));
-                            // printf("Status of the event = %d", cudaEventQuery(streamReady[device-1][stream])
-                            if (printonce) printf("%d: Receiving from %d on %d\n", device, tileindex-1, tileindex);
-                            while (wait[device-1][stream] != 1) nanosleep(&ts, &ts); //do nothing
-                            wait[device-1][stream] = 0;
-                            // GPUCHECK(cudaStreamWaitEvent(d_streams[device][stream], streamReady[device-1][stream], 0));
-                            GPUCHECK(cudaStreamSynchronize(d_streams[device-1][stream]));
+                            GPUCHECK(cudaStreamWaitEvent(d_streams[device][stream], streamReady[d[devicecounter-1]][stream], 0));
                             if (printonce) printf("%d: Receiving from %d on %d\n", device, tileindex-1, tileindex);
                         } else {
                             if (printonce) printf("%d: No receiving possible from %d on %d\n", device, tileindex-1, tileindex);
                             TileHostToGPUBuff(Arow*x, (Arow+1)*x, Acol*x, (Acol+1)*x, h_A, d_All[device][A][stream], d_streams[device][stream], membuffs[device][stream][0]); // Tile A
                         }
                     }
-                    // if (printonce) printf("printonce = %d\n", printonce);
-                    // printonce = 0;
-
-                    // if (device == 0 || device == 2){
-                    //     TileHostToGPUBuff(Arow*x, (Arow+1)*x, Acol*x, (Acol+1)*x, h_A, d_All[device][A][stream], d_streams[device][stream], membuffs[device][stream][0]); // Tile A
-                    //     GPUCHECK(cudaStreamSynchronize(d_streams[device][stream]));
-                    //     // inputs are: (void* dst, int  dstDevice, const void* src, int  srcDevice, size_t count, cudaStream_t stream = 0)
-				    //     GPUCHECK(cudaMemcpyPeerAsync(d_All[device+1][A][stream]->data, device+1, d_All[device][A][stream]->data, device, x*x*sizeof(double), d_streams[device][stream]));
-                    //     GPUCHECK(cudaEventRecord(streamReady[device][stream], d_streams[device][stream]));
-                    // } else {
-                    //     GPUCHECK(cudaStreamWaitEvent(d_streams[device][stream], streamReady[device-1][stream], 0)); 
-                    // }
-
-                    // TileHostToGPUBuff(Arow*x, (Arow+1)*x, Acol*x, (Acol+1)*x, h_A, d_All[device][A][stream], d_streams[device][stream], membuffs[device][stream][0]); // Tile A
+                    // Now that the tile of A is transferred, get B and start computation
                     TileHostToGPUBuff(Brow*x, (Brow+1)*x, Bcol*x, (Bcol+1)*x, h_B, d_All[device][B][stream], d_streams[device][stream], membuffs[device][stream][1]); // Tile B
                     
-                    GPUCHECK(cudaStreamSynchronize(d_streams[device][stream]));
                     kuhdammson(d_All[device][A][stream], d_All[device][B][stream], d_All[device][C][stream], d_streams[device][stream], handles[device]);
+                    GPUCHECK(cudaStreamSynchronize(d_streams[device][stream]));
                 }
+            }
+            }
+
+            #pragma omp parallel for private(device, tileindex, Arow, Acol, Brow, Bcol, Crow, Ccol) num_threads(devicecount)
+            for (devicecounter = 0; devicecounter < devicecount; devicecounter++){
+                device = d[devicecounter];
+                GPUCHECK(cudaSetDevice(device));
+                tileindex = devicecounter + (stream*numtilesperstream + streamop)*devicecount;
+                Crow = tileindex/numtilesperdim; Ccol = tileindex%numtilesperdim; Arow = Crow; Acol = tileop; Brow = tileop; Bcol = Ccol;
 
                 TileGPUToHostBuff(Crow*x, (Crow+1)*x, Ccol*x, (Ccol+1)*x, d_All[device][C][stream], h_C, d_streams[device][stream], membuffs[device][stream][0]);
                 printf("sending tile %d back\n", tileindex);
-
             }
         }
         cudaDeviceSynchronize();
@@ -260,8 +251,9 @@ int main(int argc, char* argv[]) {
 
     timer.Release();
  
-    #pragma omp parallel for private(device, abc, stream) num_threads(devicecount) 
-    for (device = 0; device < devicecount; device++){
+    #pragma omp parallel for private(device, devicecounter, abc, stream) num_threads(devicecount) 
+    for (devicecounter = 0; devicecounter < devicecount; ++devicecounter){
+        device = d[devicecounter];
         GPUCHECK(cudaSetDevice(device));
         CUBLASCHECK(cublasDestroy(handles[device]));
 
@@ -271,7 +263,6 @@ int main(int argc, char* argv[]) {
                 kuhdaFreeM(d_All[device][abc][stream], 'c');
             }
             GPUCHECK(cudaStreamDestroy(d_streams[device][stream]));
-            GPUCHECK(cudaStreamDestroy(p_streams[device][stream]));
             kuhdaFreeM(membuffs[device][stream][0], 'p');
             kuhdaFreeM(membuffs[device][stream][1], 'p');
             GPUCHECK(cudaEventDestroy(streamReady[device][stream]));

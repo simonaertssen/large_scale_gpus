@@ -40,6 +40,7 @@ int main(int argc, char* argv[]) {
   	}
 	LOG(START, SUCCES);
 
+    omp_set_nested(true);
     cublasHandle_t handles[devicecount]; 
     #pragma omp parallel for private(device) num_threads(devicecount)
     for (device = 0; device < devicecount; device ++){
@@ -91,6 +92,7 @@ int main(int argc, char* argv[]) {
     matrix *membuffs[devicecount][numstreamsperdevice][2];
 
     MatMulTimer timer;
+    int firstMemset[devicecount][numstreamsperdevice];
 
     // Parallel device memory and dependency allocation
     // printf("Allocating tiles A, B and C on %d devices..\n", devicecount);
@@ -108,6 +110,7 @@ int main(int argc, char* argv[]) {
             // GPUCHECK(cudaStreamCreateWithFlags(&d_streams[device][stream], cudaStreamNonBlocking));
             membuffs[device][stream][0] = kuhdaMallocMP(x, x);
             membuffs[device][stream][1] = kuhdaMallocMP(x, x);
+            firstMemset[device][stream] = 1;
         }
     }
 
@@ -118,16 +121,16 @@ int main(int argc, char* argv[]) {
     timer.Start();
 
     // Parallel device multiplication loop
-    #pragma omp parallel for num_threads(devicecount)
+    #pragma omp parallel for private(device) num_threads(devicecount)
     for (device = 0; device < devicecount; device++){
         GPUCHECK(cudaSetDevice(device));
 
         // Loop over streams per device
-        // #pragma omp parallel for num_threads(numstreamsperdevice)
-        #pragma omp parallel for private(stream, streamop, tileindex, tileop, Arow, Acol, Brow, Bcol, Crow, Ccol) num_threads(numstreamsperdevice) 
+        #pragma omp parallel for num_threads(numstreamsperdevice)
+        // #pragma omp parallel for private(stream, streamop, tileindex, tileop, Arow, Acol, Brow, Bcol, Crow, Ccol) num_threads(numstreamsperdevice) 
         for (stream = 0; stream < numstreamsperdevice; ++stream){
             // Loop over all operations on C per stream
-            // #pragma omp parallel for private(tileindex, tileop, Arow, Acol, Brow, Bcol, Crow, Ccol) num_threads(numtilesperstream)
+            #pragma omp parallel for private(tileindex, tileop, Arow, Acol, Brow, Bcol, Crow, Ccol) num_threads(numtilesperstream)
             for (streamop = 0; streamop < numtilesperstream; ++streamop){
                 // Register indices of C tiles
                 // tileindex = (device*numstreamsperdevice + stream)*numtilesperstream + streamop; 
@@ -135,8 +138,13 @@ int main(int argc, char* argv[]) {
                 tileindex = tileindex = device + (stream*numtilesperstream + streamop)*devicecount;
                 Crow = tileindex/numtilesperdim; Ccol = tileindex%numtilesperdim;
 
-                // Set contents of C to zero for use as an accumulator:
-                GPUCHECK(cudaMemsetAsync(d_All[device][C][stream]->data, 0, x*x*sizeof(double), d_streams[device][stream]));
+                // Set contents of C to zero for use as an accumulator, except for in the first run:
+                if (firstMemset[device][stream] == 0){
+                    GPUCHECK(cudaMemsetAsync(d_All[device][C][stream]->data, 0, x*x*sizeof(double), d_streams[device][stream]));
+                } else {
+                    firstMemset[device][stream] = 0;
+                }
+                
                 // printf("Dev %d, stream %d: tileindex = %d, (%d,%d)\n", device, stream, tileindex, Crow, Ccol);
 
                 // Loop over all tiles of A and B to copy: Arow = Crow and Bcol = Ccol
