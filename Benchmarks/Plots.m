@@ -36,8 +36,11 @@ GFLOPS = results16(:, 3);
 mGFLOPS = zeros(l/3, 1);
 vGFLOPS = zeros(l/3, 1);
 for i = 1:l/3
-    mGFLOPS(i) = mean(GFLOPS(i:(i+3)));
-    vGFLOPS(i) = std(GFLOPS(i:(i+3)));
+    val = 1 + (i-1)*3;    % val = 1, 4, 7, 10 ... 
+    mGFLOPS(i) = mean(GFLOPS(val:(val+2)));
+    vGFLOPS(i) = std(GFLOPS(val:(val+2)));
+%     mGFLOPS(i) = mean(GFLOPS(i:(i+3)));
+%     vGFLOPS(i) = std(GFLOPS(i:(i+3)));
 end
 a = tinv(0.95,2)*vGFLOPS/sqrt(3);
 
@@ -76,8 +79,11 @@ GFLOPS = results32(:, 3);
 mGFLOPS = zeros(l/3, 1);
 vGFLOPS = zeros(l/3, 1);
 for i = 1:l/3
-    mGFLOPS(i) = mean(GFLOPS(i:(i+3)));
-    vGFLOPS(i) = std(GFLOPS(i:(i+3)));
+    val = 1 + (i-1)*3;    % val = 1, 4, 7, 10 ... 
+    mGFLOPS(i) = mean(GFLOPS(val:(val+2)));
+    vGFLOPS(i) = std(GFLOPS(val:(val+2)));
+%     mGFLOPS(i) = mean(GFLOPS(i:(i+3)));
+%     vGFLOPS(i) = std(GFLOPS(i:(i+3)));
 end
 a = tinv(0.95,2)*vGFLOPS/sqrt(3);
 
@@ -127,8 +133,11 @@ GFLOPS = results16(:, 3);
 mGFLOPS = zeros(l/3, 1);
 vGFLOPS = zeros(l/3, 1);
 for i = 1:l/3
-    mGFLOPS(i) = mean(GFLOPS(i:(i+3)));
-    vGFLOPS(i) = std(GFLOPS(i:(i+3)));
+    val = 1 + (i-1)*3;    % val = 1, 4, 7, 10 ... 
+    mGFLOPS(i) = mean(GFLOPS(val:(val+2)));
+    vGFLOPS(i) = std(GFLOPS(val:(val+2)));
+%     mGFLOPS(i) = mean(GFLOPS(i:(i+3)));
+%     vGFLOPS(i) = std(GFLOPS(i:(i+3)));
 end
 a = tinv(0.05,2)*vGFLOPS/sqrt(3);
 
@@ -146,8 +155,8 @@ xlabel('\fontname{SansSerif}Tile dimension T', 'FontSize', 16)
 ylabel('\fontname{SansSerif}Performance [GFLOPS]', 'FontSize', 16)
 xticks(1024:1024:14336)
 xtickangle(45)
-ylim([0, 7000])
-yticks(0:1000:7000)
+ylim([0, 10000])
+yticks(0:1000:10000)
 
 a = get(gca,'XTickLabel');
 set(gca,'XTickLabel',a,'FontName','SansSerif','fontsize',12)
@@ -167,8 +176,11 @@ GFLOPS = results32(:, 3);
 mGFLOPS = zeros(l/3, 1);
 vGFLOPS = zeros(l/3, 1);
 for i = 1:l/3
-    mGFLOPS(i) = mean(GFLOPS(i:(i+3)));
-    vGFLOPS(i) = std(GFLOPS(i:(i+3)));
+    val = 1 + (i-1)*3;    % val = 1, 4, 7, 10 ... 
+    mGFLOPS(i) = mean(GFLOPS(val:(val+2)));
+    vGFLOPS(i) = std(GFLOPS(val:(val+2)));
+%     mGFLOPS(i) = mean(GFLOPS(i:(i+3)));
+%     vGFLOPS(i) = std(GFLOPS(i:(i+3)));
 end
 a = tinv(0.05,2)*vGFLOPS/sqrt(3);
 
@@ -187,8 +199,8 @@ ylabel('\fontname{SansSerif}Performance [GFLOPS]', 'FontSize', 16)
 xticks(blockdim(1:3:end))
 xlim([0, blockdim(end) + 1024])
 xtickangle(45)
-ylim([0, 7000])
-yticks(0:1000:7000)
+ylim([0, 10000])
+yticks(0:2000:10000)
 
 a = get(gca,'XTickLabel');
 set(gca,'XTickLabel',a,'FontName','SansSerif','fontsize',12)
@@ -214,8 +226,11 @@ GFLOPS = results(:, 3);
 mGFLOPS = zeros(l/3, 1);
 vGFLOPS = zeros(l/3, 1);
 for i = 1:l/3
-    mGFLOPS(i) = mean(GFLOPS(i:(i+3)));
-    vGFLOPS(i) = std(GFLOPS(i:(i+3)));
+    val = 1 + (i-1)*3;    % val = 1, 4, 7, 10 ... 
+    mGFLOPS(i) = mean(GFLOPS(val:(val+2)));
+    vGFLOPS(i) = std(GFLOPS(val:(val+2)));
+%     mGFLOPS(i) = mean(GFLOPS(i:(i+3)));
+%     vGFLOPS(i) = std(GFLOPS(i:(i+3)));
 end
 a = tinv(0.95,2)*vGFLOPS/sqrt(3);
 
@@ -224,7 +239,7 @@ counter = [n(1:3:end); flipud(n(1:3:end))];
 inBetween = [mGFLOPS + a; flipud(max(0, mGFLOPS - a))];
 h = fill(counter, inBetween, 'b');
 set(h,'facealpha', .1, 'FaceColor', 'r','LineStyle','none')
-plot(n(1:3:end), mGFLOPS, '-or', 'LineWidth', 2);
+perf = plot(n(1:3:end), mGFLOPS, '-or', 'LineWidth', 2);
 plot(n(1:3:end), mGFLOPS + a, ':k', 'LineWidth', 1);
 plot(n(1:3:end), max(0, mGFLOPS - a), ':k', 'LineWidth', 1);
 
@@ -235,20 +250,21 @@ xlim([0, n(end) + 1024])
 
 xticks(n(1:3:end))
 xtickangle(45)
-ylim([0, 5000])
-yticks(0:1000:5000)
+ylim([0, 14000])
+yticks(0:2000:14000)
 
 ax = get(gca,'XTickLabel');
 set(gca,'XTickLabel',ax,'FontName','SansSerif','fontsize',12)
 
 yyaxis right
-plot(n(1:3:end), blockdim(1:3:end), '-xk', 'LineWidth', 2);
+tiledim = plot(n(1:3:end), blockdim(1:3:end), '-xk', 'LineWidth', 2);
 ylim([0, 10000])
 yticks(0:1024:8192)
 ylabel('\fontname{SansSerif}Tile dimension T', 'FontSize', 16)
 ax = gca;
 ax.YColor = 'k';
 
+legend([perf; tiledim], 'Performance', 'Tile dimension', 'Location', 'northwest');
 print(f3, 'Benchmark CublasXt/Finalresults_benchmarkCublasXtSXM2SH.png', '-dpng', '-r400')
 
 %% Benchmark cublasXt: P9
@@ -269,8 +285,11 @@ GFLOPS = results(:, 3);
 mGFLOPS = zeros(l/3, 1);
 vGFLOPS = zeros(l/3, 1);
 for i = 1:l/3
-    mGFLOPS(i) = mean(GFLOPS(i:(i+3)));
-    vGFLOPS(i) = std(GFLOPS(i:(i+3)));
+    val = 1 + (i-1)*3;    % val = 1, 4, 7, 10 ... 
+    mGFLOPS(i) = mean(GFLOPS(val:(val+2)));
+    vGFLOPS(i) = std(GFLOPS(val:(val+2)));
+%     mGFLOPS(i) = mean(GFLOPS(i:(i+3)));
+%     vGFLOPS(i) = std(GFLOPS(i:(i+3)));
 end
 a = tinv(0.95,2)*vGFLOPS/sqrt(3);
 
@@ -279,7 +298,7 @@ counter = [n(1:3:end); flipud(n(1:3:end))];
 inBetween = [mGFLOPS + a; flipud(max(0, mGFLOPS - a))];
 h = fill(counter, inBetween, 'b');
 set(h,'facealpha', .1, 'FaceColor', '#0072BD','LineStyle','none')
-plot(n(1:3:end), mGFLOPS, '-or', 'LineWidth', 2, 'color', '#0072BD');
+perf = plot(n(1:3:end), mGFLOPS, '-or', 'LineWidth', 2, 'color', '#0072BD');
 plot(n(1:3:end), mGFLOPS + a, ':k', 'LineWidth', 1);
 plot(n(1:3:end), max(0, mGFLOPS - a), ':k', 'LineWidth', 1);
 
@@ -290,19 +309,21 @@ xticks(n(1:3:end))
 xlim([0, n(end) + 1024])
 
 xtickangle(45)
-ylim([0, 5000])
-yticks(0:1000:5000)
+ylim([0, 14000])
+yticks(0:2000:14000)
 
 ax = get(gca,'XTickLabel');
 set(gca,'XTickLabel',ax,'FontName','SansSerif','fontsize',12)
 
 yyaxis right
-plot(n(1:3:end), blockdim(1:3:end), '-xk', 'LineWidth', 1);
+tiledim = plot(n(1:3:end), blockdim(1:3:end), '-xk', 'LineWidth', 1);
 ylim([0, 10000])
 yticks(0:1024:8192)
 ylabel('\fontname{SansSerif}Tile dimension T', 'FontSize', 16)
 ax = gca;
 ax.YColor = 'k';
+
+legend([perf; tiledim], 'Performance', 'Tile dimension', 'Location', 'northwest');
 
 print(f4, 'Benchmark CublasXt/Finalresults_benchmarkCublasXtP9SH.png', '-dpng', '-r400')
 
@@ -325,8 +346,11 @@ GFLOPS = results(:, 3);
 mGFLOPS = zeros(l/3, 1);
 vGFLOPS = zeros(l/3, 1);
 for i = 1:l/3
-    mGFLOPS(i) = mean(GFLOPS(i:(i+3)));
-    vGFLOPS(i) = std(GFLOPS(i:(i+3)));
+    val = 1 + (i-1)*3;    % val = 1, 4, 7, 10 ... 
+    mGFLOPS(i) = mean(GFLOPS(val:(val+2)));
+    vGFLOPS(i) = std(GFLOPS(val:(val+2)));
+%     mGFLOPS(i) = mean(GFLOPS(i:(i+3)));
+%     vGFLOPS(i) = std(GFLOPS(i:(i+3)));
 end
 a = tinv(0.95,2)*vGFLOPS/sqrt(3);
 
@@ -347,6 +371,7 @@ xtickangle(45)
 
 ax = get(gca,'XTickLabel');
 set(gca,'XTickLabel',ax,'FontName','SansSerif','fontsize',12)
+
 
 print(f5, 'Benchmark ADM_Direct/Finalresults_benchmarkADM_DirectSXM2SH.png', '-dpng', '-r400')
 
